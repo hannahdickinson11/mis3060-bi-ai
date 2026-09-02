@@ -1,4 +1,4 @@
-##Question 1
+## Question 1
 **Prompt:** Wildcat's data includes both credit score and debt-to-income ratio, but these measures can tell different stories about the same borrower. If a borrower has a relatively strong credit score but also carries a high debt-to-income ratio, how should Wildcat's risk team interpret that combination? Focus on the business and credit-risk implications rather than calculating or summarizing statistics from the dataset.
 
 **Summarized Answer:** Credit score and debt-to-income ratio measure different aspects of borrower risk. A credit score reflects a borrower's past history of managing debt, while DTI reflects their current ability to take on additional debt. A borrower with a strong credit score but high DTI may have a good payment history but still be financially stretched and vulnerable to unexpected expenses. Therefore, Wildcat should consider both metrics when making lending decisions rather than relying on credit score alone.
