@@ -54,6 +54,15 @@ Practical Example: Instead of saying "n=42, so results may not be statistically 
 
 **Evaluation - What did this strategy do well? What was missing or generic?** The few-shot strategy did well because it gave Claude a clear example of the structure and level of detail expected before asking the actual question. This resulted in an organized response with distinct sections for the main point, why it matters, and a practical example. The response was easy to understand and gave concrete examples of how a BI analyst could communicate data limitations. However, the examples were still somewhat generic because they could apply to many BI situations without addressing a particular industry, dataset, or business decision. The prompt also focused more on formatting than on providing specific business context.
 
-### Conclusion
+**Conclusion:**
 
 Overall, each prompting strategy improved the response in a different way. The zero-shot strategy provided a clear and useful general answer, but it was the most generic because it had no additional guidance. The role-assigned strategy produced a more practical response by focusing on the needs of business executives and connecting data limitations to decision-making. The few-shot strategy produced the most organized output because the example gave Claude a specific structure to follow, making it the most useful for a BI analyst who needs to communicate information clearly and consistently.
+
+## Fact-Check 
+**Claim made by Claude:** “Debt-to-income ratio shows how much of a borrower's income is already committed to debt.”
+
+**Source used to check:** Consumer Financial Protection Bureau (CFPB), “What is a debt-to-income ratio?” (https://www.consumerfinance.gov/ask-cfpb/what-is-a-debt-to-income-ratio-en-1791/?utm_source=chatgpt.com)
+
+**What the source says:** The CFPB defines debt-to-income ratio (DTI) as “all your monthly debt payments divided by your gross monthly income.” The CFPB also explains that DTI is one way lenders measure a borrower's ability to manage the monthly payments on money they plan to borrow.
+
+**Do they agree?** Yes, the claim is consistent with the CFPB's definition. Claude's statement is a simplified explanation of DTI rather than a precise mathematical definition, but it accurately communicates the basic idea that DTI measures how much of a borrower's income goes toward debt payments. This suggests that Claude can provide reliable general explanations of established financial concepts, but specific definitions, thresholds, or regulatory requirements should still be verified with authoritative sources.
