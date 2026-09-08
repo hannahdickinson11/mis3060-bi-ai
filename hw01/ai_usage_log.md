@@ -1,7 +1,7 @@
 # AI Usage Log
-**Assignment: hw01**  
-**Student: Hannah Dickinson**  
-**Date: 09/09/2026**  
+**Assignment:** HW1 - Prompt Engineering
+**Student:** Hannah Dickinson
+**Date:** 09/09/2026
 
 ## Reflection
 
