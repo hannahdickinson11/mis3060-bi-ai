@@ -61,7 +61,7 @@ Overall, each prompting strategy improved the response in a different way. The z
 ## Fact-Check 
 **Claim made by Claude:** “Debt-to-income ratio shows how much of a borrower's income is already committed to debt.”
 
-**Source used to check:** Consumer Financial Protection Bureau (CFPB), “What is a debt-to-income ratio?” (https://www.consumerfinance.gov/ask-cfpb/what-is-a-debt-to-income-ratio-en-1791/?utm_source=chatgpt.com)
+**Source used to check:** Consumer Financial Protection Bureau (CFPB), “What is a debt-to-income ratio?” (https://www.consumerfinance.gov/ask-cfpb/what-is-a-debt-to-income-ratio-en-1791)
 
 **What the source says:** The CFPB defines debt-to-income ratio (DTI) as “all your monthly debt payments divided by your gross monthly income.” The CFPB also explains that DTI is one way lenders measure a borrower's ability to manage the monthly payments on money they plan to borrow.
 
