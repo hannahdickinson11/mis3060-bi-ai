@@ -1,3 +1,8 @@
+# AI Usage Log
+**Assignment: hw01**  
+**Student: Hannah Dickinson**  
+**Date: 09/09/2026**  
+
 ## Reflection
 
 I used Claude Cowork to help me answer the business context questions, compare different prompting strategies, and see how changing a prompt can affect the response. For Part 2, I used Claude to think through Wildcat’s credit risk questions and come up with follow-up questions. For Part 3, I compared zero-shot, role-assigned, and few-shot prompting to see which strategy gave the most useful response.
