@@ -2,8 +2,8 @@
 # MIS3060 Business Intelligence with AI
 Villanova School of Business — Fall 2026
 
-**Student:** Hannah Dickinson
-**GitHub:** hannahdickinson11
+**Student:** [Hannah Dickinson]
+**GitHub:** [hannahdickinson11]
 
 ## About This Repository
 This repository contains all lab exercises, homework assignments, and project
