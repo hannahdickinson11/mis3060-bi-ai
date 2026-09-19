@@ -83,27 +83,32 @@ For your validation.md notes, you could write something like: "the true median i
 
 **1. Did Claude's predicted outputs (Prompt 1) match what you actually saw in the terminal? List any discrepancies.** 
 
-   *(your answer)*
+   The structure and logic of Claude's predicted outputs match what what I saw. They show the same section order, same header, same descending sort order, same rounding, and same chart filenames. However, there were no actual numeric predictions to compare since Prompt 1's session had no data and used placeholders when answering. The one specific discrepancy across the two: Claude showed `security_id` as `int64`, but the real output shows `float64`. A column with missing values can not stay an integer in the pandas version so it gets upgraded to float automatically. The response also showed `txn_date`/`txn_type` as `object`dtype , while the real output `str`. This was also addressed in Question 2A above.
+
 
 **2. What did Claude flag as potentially unexpected or worth investigating (Prompt 2)?**
 
-   *(your answer)*
+   The three main things that Claude flagged as unexpected or worth investigating were: The Advisory Fee Group's mean ($7,375.17) being over 8x its median ($859.12). This is a much bigger mean/median gap that any other transaction type in the dataset, suggesting either outlier fees (e.g., flat fees vs. AUM-based fees) or two blended fee structures. The other aspect Claude suggested I investigate was the negative share Buy transactions. It suggested that prior to running the program, I should pull those 836 rows out and look for a pattern in the data. Finally, Claude noted the round bounds on `price` ($10-$500) `shares` (~500 max) as a sign that the data may be simulated rather than real market data, and also flagged that `security_id` should be cast to a nullable integer type bedore using it as a join key.
 
 **3. Did Claude mention the 101,597 null values in `security_id`? What explanation did it give?**
 
-   *(your answer)*
+   Yes, and it gave a specific, verifiable explanation: 101,597 exactly equals Deposit (35,981) + Advisory Fee (35,766) + Withdrawal (29,850) rows added together. Claude's point was that these three transaction types never involve a security (you don't buy shares when making a deposit). So, these nulls are not due to data quality defects.
 
 **4. Did Claude flag the `txn_date` column as a concern? Why would that matter for a time-series analysis?**
 
-   *(your answer)*
+   No, it didn't flag `txn_date`'s string type as a concern in this response. Claude only confirmed the date range looked correct. It did not comment on the fact that it's stored as test rather than an actual date type. This would matter for a time-series analysis because as long as it stays a string, you can't do real math on it. All operations with the data would fail outright or produce the wrong results on text. Due to this, I would need to convert it to pd.`pd.to_datetime` first, same as the internal script does for section 8.
 
 **5. Open your three chart files. Does what you see in each image match Claude's explanation of that section of the output? Note any differences.**
 
-   *(your answer)*
+   For the most part yes with one interesting mismatch worth noting: the histogram and scatter plot match what was described. But the box plot has a subtle ordering difference - the code `txn_type` by mean amount descending (Dividend highest, Advisory Fee lowest) before building the chart, but when you actually open `box_amount_by_type.png`, Advisory Fee appears at the top and Dividend at the bottom. This is what the reverse of what "sort descending" would suggest. This happens because matplotlib's horizontal box plot draws the first item in the list at the bottom, not the top. 
 
 **6. Paste one follow-up question you asked Claude, and Claude's answer.**
 
-   *(your answer)*
+   *Input:* "You said the negative shares values on those Buy transactions help suppress the correlation between shares and amount — can you explain simply, why negative values would weaken that correlation?"
+
+
+   *Output:* "Negative shares means those rows move in the opposite direction from the rest of the data - amount stays positive while shares goes negative, instead of both rising and falling together like normal rows do. That mismatch pulls the overall correlation down a bit, since correlation measures how consistently two variables move the same way."
+
 
 ---
 
@@ -111,43 +116,43 @@ For your validation.md notes, you could write something like: "the true median i
 
 ### Business-reasonableness questions
 
-*(Answer each in your own words — do not paste Claude's response as your answer here.)*
 
-1. `security_id`, `shares`, and `price` are all null in exactly 101,597 rows. Looking at the `txn_type` value counts, which three transaction types would you expect to have no security — and why? Do the counts add up to 101,597?
 
-   *(your answer)*
+*1. `security_id`, `shares`, and `price` are all null in exactly 101,597 rows. Looking at the `txn_type` value counts, which three transaction types would you expect to have no security — and why? Do the counts add up to 101,597?*
 
-2. There are 83,556 Buy transactions and 59,755 Sell transactions. What does it mean for a wealth management firm to have significantly more Buys than Sells over a five-year period?
+   *Deposit and withdrawal is just cash moving in or out of your account, so there no stock or bond changes hands - therefore there is nothing to fill in for `security_id`, `shares`, and `price`. Only Buy, Sell, and Dividend involve securities and thus do not have null values. The counts do check out with Deposit (35,981) + Advisory Fee (35,766) + Withdrawal (29,850) = 101,597. This matches the null count exactly. 
 
-   *(your answer)*
+*2. There are 83,556 Buy transactions and 59,755 Sell transactions. What does it mean for a wealth management firm to have significantly more Buys than Sells over a five-year period?*
 
-3. The `txn_date` column is stored as a string rather than a date. If Claude Cowork generated code to compute the average number of days between transactions, what would go wrong if the dates remained as strings?
+   Having more Buys (83,556) than Sells (59,755) over five years shows there is a higher demand than supply, signaling net accumulation. So, essentially, clients are adding to their portfolios faster than they are liquidatig them. This is consistent with a growing client group bringing in new money to invest and/or a longer term buy and hold investment strategy.
 
-   *(your answer)*
+*3. The `txn_date` column is stored as a string rather than a date. If Claude Cowork generated code to compute the average number of days between transactions, what would go wrong if the dates remained as strings?*
 
-4. Wildcat Capital has 2,700 clients served by 25 advisors. Is that ratio — roughly 108 clients per advisor — plausible for a registered investment advisory firm?
+   Since the data is in string form, you can't subtract two text strings to get a number and so Python would most likely show an error. Simple arthmetic would not work e.g. "days between transaction A and B" because it requires real date objects. 
 
-   *(your answer)*
+*4. Wildcat Capital has 2,700 clients served by 25 advisors. Is that ratio — roughly 108 clients per advisor — plausible for a registered investment advisory firm?*
 
-5. 836 `Buy` transactions have negative `shares` values (as low as −499.63), while every other transaction type has only positive share values. What are two plausible business explanations for a negative share count on a Buy transaction, and what would you do next to determine which is more likely?
+   Yes, 108 clients per advisor is a plausible ratio for a registered investment advisory firm. Typical advisor have roughly 50 to 150+ clients depending on their firm's level of services. More personal boutiqe level shops run lower while larger firms with more staff have higher client numbers. 
 
-   *(your answer)*
+*5. 836 `Buy` transactions have negative `shares` values (as low as −499.63), while every other transaction type has only positive share values. What are two plausible business explanations for a negative share count on a Buy transaction, and what would you do next to determine which is more likely?*
+
+   Two plausible business explanations could be 1)a data entry error where someone recorded the value incorrectly or 2)it could be on purpose - like the systemm logging a cancelled or corrected purchase as a negative Buy instead of using a separate reveal category. To determine which is more likely, I would look at those 836 rows for a pattern - possibly the same advisor, same security type, same dates - and then check if any of them matches the earlier Buy of the same size. If there is a clear pattern, it was probably intentional while randomness suggests an error. 
 
 ### Cross-validation
-
-Run both of the following as separate quick scripts from the VS Code terminal (ask Claude Cowork to write them):
 
 - **Prompt A:** "Write Python to count rows in fact_transactions.csv where txn_type equals exactly 'Buy'."
 - **Prompt B:** "Write Python to count the total rows in fact_transactions.csv, then subtract the count of rows where txn_type is Sell, Deposit, Withdrawal, Dividend, or Advisory Fee."
 
-6. What did each script return?
+#### 6. What did each script return?
 
-   *(your answer)*
+*Prompt A*: 83,556 Buy transactions
 
-7. Do the results agree? If not, which one is wrong and why?
+*Prompt B*: 83,556 Buy transactions
 
-   *(your answer)*
+#### 7. Do the results agree? If not, which one is wrong and why?
 
-8. Why is it useful to verify a count using subtraction rather than direct filtering?
+Yes they agree, both result in 83,556 Buy transactions. Both counting methods land on the same number and it also matches the known benchmark from the assignment, so there is strong evidence that this count is correct. 
 
-   *(your answer)*
+#### 8. Why is it useful to verify a count using subtraction rather than direct filtering?
+
+Direct filtering just trusts that one line of code is right. If there's a typo or mistake in it, you'd never know. Subtraction gives you an secondary independent way to get the same number, so if something were to be wrong, the two counts wouldn't match. 
