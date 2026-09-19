@@ -1,0 +1,199 @@
+WILDCAT CAPITAL — LOAN PORTFOLIO ANALYSIS
+Generated: 2026-09-16 00:13:59
+Source file: wildcat_loans_clean.csv
+
+==========================================================================================
+1. DATA OVERVIEW — SHAPE, DTYPES, MISSING VALUES
+==========================================================================================
+Rows: 2340, Columns: 12
+
+                        dtype  missing_count
+loan_id                 int64              0
+origination_date       object              0
+borrower_id             int64              0
+loan_amount           float64              0
+interest_rate         float64              0
+loan_term_months        int64              0
+credit_score          float64             47
+debt_to_income_ratio  float64              0
+loan_purpose           object              0
+loan_status            object              0
+annual_income         float64              0
+state                  object              0
+
+==========================================================================================
+2. ORIGINATION_DATE — DTYPE CHECK / CONVERSION
+==========================================================================================
+'origination_date' dtype BEFORE: object
+'origination_date' dtype AFTER:  datetime64[ns]
+Converted 'origination_date' from object to datetime64[ns].
+
+==========================================================================================
+3. MISSING VALUES — COUNT AND PERCENTAGE BY COLUMN
+==========================================================================================
+                      missing_count  missing_pct
+loan_id                           0         0.00
+origination_date                  0         0.00
+borrower_id                       0         0.00
+loan_amount                       0         0.00
+interest_rate                     0         0.00
+loan_term_months                  0         0.00
+credit_score                     47         2.01
+debt_to_income_ratio              0         0.00
+loan_purpose                      0         0.00
+loan_status                       0         0.00
+annual_income                     0         0.00
+state                             0         0.00
+
+Rows with missing 'credit_score': 47 (2.01% of 2340 total rows)
+
+LOAN_STATUS DISTRIBUTION: FULL DATASET vs. ROWS MISSING 'credit_score'
+             full_dataset_pct  missing_credit_score_pct  difference_pct_pts
+loan_status                                                                
+Delinquent              10.60                     23.40               12.80
+Paid Off                22.74                     29.79                7.05
+Default                  4.53                     10.64                6.11
+Current                 62.14                     36.17              -25.97
+
+LOAN_PURPOSE DISTRIBUTION: FULL DATASET vs. ROWS MISSING 'credit_score'
+                  full_dataset_pct  missing_credit_score_pct  difference_pct_pts
+loan_purpose                                                                    
+Business                     14.02                     21.28                7.26
+Auto                         25.77                     29.79                4.02
+Home Improvement             30.94                     27.66               -3.28
+Personal                     20.30                     17.02               -3.28
+Education                     8.97                      4.26               -4.71
+
+==========================================================================================
+4. DESCRIPTIVE STATISTICS — NUMERIC COLUMNS
+==========================================================================================
+       loan_id  borrower_id  loan_amount  interest_rate  loan_term_months  credit_score  debt_to_income_ratio  annual_income
+count 2,340.00     2,340.00     2,340.00       2,340.00          2,340.00      2,293.00              2,340.00       2,340.00
+mean  1,170.50     1,258.05    68,398.49          11.89             68.69        674.39                  0.32     155,095.67
+std     675.64       732.22    92,614.38           4.49             27.29         75.98                  0.14     182,699.38
+min       1.00         1.00     2,073.62           4.50             36.00        500.00                  0.08      24,014.42
+25%     585.75       619.75    24,498.05           8.10             36.00        614.00                  0.20      32,742.90
+50%   1,170.50     1,253.50    40,691.79          11.52             60.00        676.00                  0.32      42,624.11
+75%   1,755.25     1,895.50    60,596.09          15.34             84.00        725.00                  0.44     255,153.52
+max   2,340.00     2,525.00   499,030.58          20.98            120.00        850.00                  0.55     649,768.69
+
+'loan_amount' statistics (2 decimal places):
+   count: 2,340.00
+    mean: 68,398.49
+     std: 92,614.38
+     min: 2,073.62
+     25%: 24,498.05
+     50%: 40,691.79
+     75%: 60,596.09
+     max: 499,030.58
+
+==========================================================================================
+5. CATEGORICAL FREQUENCY BREAKDOWNS
+==========================================================================================
+
+LOAN_PURPOSE — VALUE COUNTS AND PERCENTAGES
+  Home Improvement     count:    724   percentage:  30.9%
+  Auto                 count:    603   percentage:  25.8%
+  Personal             count:    475   percentage:  20.3%
+  Business             count:    328   percentage:  14.0%
+  Education            count:    210   percentage:   9.0%
+
+LOAN_STATUS — VALUE COUNTS AND PERCENTAGES
+  Current              count:   1454   percentage:  62.1%
+  Paid Off             count:    532   percentage:  22.7%
+  Delinquent           count:    248   percentage:  10.6%
+  Default              count:    106   percentage:   4.5%
+
+STATE — VALUE COUNTS AND PERCENTAGES
+  PA                   count:    384   percentage:  16.4%
+  NJ                   count:    272   percentage:  11.6%
+  NY                   count:    264   percentage:  11.3%
+  TX                   count:    132   percentage:   5.6%
+  FL                   count:    128   percentage:   5.5%
+  CA                   count:    115   percentage:   4.9%
+  DE                   count:     97   percentage:   4.1%
+  VA                   count:     94   percentage:   4.0%
+  MD                   count:     92   percentage:   3.9%
+  MA                   count:     87   percentage:   3.7%
+  NC                   count:     81   percentage:   3.5%
+  IL                   count:     78   percentage:   3.3%
+  OH                   count:     75   percentage:   3.2%
+  CT                   count:     71   percentage:   3.0%
+  GA                   count:     70   percentage:   3.0%
+  MI                   count:     50   percentage:   2.1%
+  WA                   count:     48   percentage:   2.1%
+  AZ                   count:     45   percentage:   1.9%
+  CO                   count:     43   percentage:   1.8%
+  MN                   count:     39   percentage:   1.7%
+  Pennsylvania         count:     25   percentage:   1.1%
+  Florida              count:     14   percentage:   0.6%
+  New Jersey           count:     13   percentage:   0.6%
+  New York             count:     12   percentage:   0.5%
+  California           count:      5   percentage:   0.2%
+  Illinois             count:      4   percentage:   0.2%
+  Texas                count:      2   percentage:   0.1%
+
+==========================================================================================
+6. CHART — LOAN AMOUNT HISTOGRAM
+==========================================================================================
+Saved histogram to: outputs\hist_loan_amount.png
+Mean loan amount:   $68,398.49
+Median loan amount: $40,691.79
+
+==========================================================================================
+7. CHART — INTEREST RATE BY LOAN STATUS (BOX PLOT)
+==========================================================================================
+Saved box plot to: outputs\box_interest_by_status.png
+
+Median interest rate by loan status:
+  Current      n= 1454   median=10.36%
+  Paid Off     n=  532   median=12.26%
+  Delinquent   n=  248   median=13.37%
+  Default      n=  106   median=14.12%
+
+==========================================================================================
+8. SUMMARY BY LOAN_STATUS (sorted by count, descending)
+==========================================================================================
+             count  mean_loan_amount  mean_interest_rate  mean_credit_score  mean_debt_to_income_ratio
+loan_status                                                                                           
+Current       1454         70,770.63               11.35             684.70                       0.31
+Paid Off       532         67,404.88               12.21             670.30                       0.31
+Delinquent     248         57,476.85               13.36             645.60                       0.32
+Default        106         66,399.23               14.23             617.10                       0.33
+
+==========================================================================================
+9. LOAN COUNT AND 'Default' RATE BY LOAN_PURPOSE
+==========================================================================================
+                  count  default_count  default_pct
+loan_purpose                                       
+Home Improvement    724             47         6.50
+Personal            475             23         4.80
+Business            328             11         3.40
+Auto                603             20         3.30
+Education           210              5         2.40
+
+Overall default rate across all loans: 4.5%
+
+==========================================================================================
+10. CORRELATION MATRIX (numeric columns, excluding loan_id / borrower_id)
+==========================================================================================
+                      loan_amount  interest_rate  loan_term_months  credit_score  debt_to_income_ratio  annual_income
+loan_amount                  1.00          -0.01              0.00          0.03                 -0.01           0.02
+interest_rate               -0.01           1.00              0.01         -0.84                 -0.00           0.05
+loan_term_months             0.00           0.01              1.00         -0.01                  0.02          -0.00
+credit_score                 0.03          -0.84             -0.01          1.00                  0.00          -0.04
+debt_to_income_ratio        -0.01          -0.00              0.02          0.00                  1.00          -0.01
+annual_income                0.02           0.05             -0.00         -0.04                 -0.01           1.00
+
+TOP 5 STRONGEST CORRELATIONS (by absolute value):
+  credit_score <-> interest_rate: r = -0.84 (negative)
+  annual_income <-> interest_rate: r = 0.05 (positive)
+  annual_income <-> credit_score: r = -0.04 (negative)
+  credit_score <-> loan_amount: r = 0.03 (positive)
+  debt_to_income_ratio <-> loan_term_months: r = 0.02 (positive)
+
+==========================================================================================
+DONE
+==========================================================================================
+Charts saved to: outputs\hist_loan_amount.png, outputs\box_interest_by_status.png
+Full text report saved to: outputs\analysis_report.txt
