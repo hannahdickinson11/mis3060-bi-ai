@@ -1,0 +1,4 @@
+# HW3 Analysis
+## 3–5 sentence business interpretation of the timeline
+
+At first glance, executive changes seem to come well before earnings: 21 of my 32 timeline rows are labeled "before earnings." But that number is inflated, because one Walmart reorganization filing on January 16 produced six rows by itself. When I count each filing once, the split is much closer: 11 before, 7 after, and 1 in the same week. The timing also depends on the type of change. Major CEO transitions landed right before earnings (Apple announced Tim Cook's move to executive chairman 10 days before reporting, and Walmart filed its CEO transition 6 days before), while Microsoft's board departures mostly came after earnings and don't seem connected to them. So my data suggests companies may time their biggest leadership news near earnings, but routine board changes don't follow a pattern, and with 19 filings over one year, this isn't enough to call it a trend.
