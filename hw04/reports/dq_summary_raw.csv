@@ -1,0 +1,66 @@
+finding_id,table,column,check_group,check,severity,rows_affected,pct_rows,example,detail,issue_group
+1,dim_client,state,1. Column,fails to parse as state_code,ERROR,78,3.0891,Pennsylvania | New York | New Jersey,shapes seen: A (96.9%); Aa (2.0%); Aa Aa (1.1%),dim_client.state
+2,dim_client,state,1. Column,value not in allowed list,ERROR,78,3.0891,Pennsylvania | Florida | New York | New Jersey | California | Illinois,,dim_client.state
+3,fact_portfolio_snapshot,return_ytd,1. Column,fails to parse as float,ERROR,300,0.2316,9.28% | 19.52% | 13.35%,shapes seen: 9.9 (64.2%); -9.9 (35.5%); 9.9% (0.1%),fact_portfolio_snapshot.return_ytd
+4,fact_transactions,security_id,1. Column,fails to parse as int,ERROR,197175,65.9951,45.0 | 174.0 | 478.0,shapes seen: 9.9 (100.0%),fact_transactions.security_id
+5,fact_transactions,shares,1. Column,"outside range [0.0001, 10000000.0]",ERROR,836,0.2798,-261.9719 | -338.0946 | -360.8407,observed min=-499.6323 max=499.9981,fact_transactions.shares
+6,fact_transactions,security_id,2. Single-table,integer ID stored as float text ('45.0'),ERROR,197175,65.9951,45.0 | 174.0 | 478.0,will not join to dim_security.security_id ('45'),fact_transactions.security_id
+7,fact_transactions,shares,2. Single-table,negative shares (sign rule: direction comes from txn_type),ERROR,836,0.2798,272 | 812 | 815,by type: {'Buy': 836},fact_transactions.shares
+8,fact_transactions,client_id,3. Referential,RI fact_transactions.client_id -> dim_client.client_id,ERROR,200,0.0669,3191 | 3017 | 3058 | 2974 | 3131,match=99.9331% orphans=200 distinct_orphans=200 null_keys=0,fact_transactions.client_id
+9,fact_transactions,security_id,3. Referential,RI fact_transactions.security_id -> dim_security.security_id,ERROR,197175,65.9951,45.0 | 174.0 | 478.0 | 406.0 | 484.0,match=0.0% orphans=197175 distinct_orphans=500 null_keys=101597,fact_transactions.security_id
+10,dim_client,risk_profile,1. Column,blank / null-token values,WARN,76,3.0099,<blank>,missing value — decide fill vs leave vs flag,dim_client.risk_profile
+11,dim_client,state,1. Column,mixed formats in one column,WARN,78,3.0891,A (96.9%); Aa (2.0%); Aa Aa (1.1%),more than one value shape for a non-text column,dim_client.state
+12,fact_fees,aum_basis,1. Column,suspicious repeated value (possible placeholder),WARN,386,0.3159,1000.0,"value appears 386x in a column with 121,755 distinct values",fact_fees.aum_basis
+13,fact_fees,bps_charged,1. Column,"outside range [0, 100]",WARN,1,0.0008,100.38,observed min=25.56 max=100.38,fact_fees.bps_charged
+14,fact_portfolio_snapshot,active_alpha_ytd,1. Column,"outside range [-2, 2]",WARN,459,0.3543,3.036473 | 3.093713 | 3.049121,observed min=-1.22245 max=94.569541,fact_portfolio_snapshot.active_alpha_ytd
+15,fact_portfolio_snapshot,aum,1. Column,suspicious repeated value (possible placeholder),WARN,420,0.3242,1000.0,"value appears 420x in a column with 129,062 distinct values",fact_portfolio_snapshot.aum
+16,fact_portfolio_snapshot,return_ytd,1. Column,mixed formats in one column,WARN,300,0.2316,9.9 (64.2%); -9.9 (35.5%); 9.9% (0.1%),more than one value shape for a non-text column,fact_portfolio_snapshot.return_ytd
+17,fact_portfolio_snapshot,return_ytd,1. Column,"outside range [-1, 1]",WARN,976,0.7534,2.872312 | 2.946391 | 2.885055,observed min=-0.993708 max=94.668215,fact_portfolio_snapshot.return_ytd
+18,dim_client,first_name+age+city+zip_code+initial_aum,2. Single-table,near-duplicate rows (same business key),WARN,25,0.9901,99 | 155 | 560 | 566 | 674 | 737,extra records; 50 rows involved — same real-world entity/event under more than one ID,dim_client.near_duplicates
+19,dim_client,last_name,2. Single-table,near-duplicate groups where one last_name is a truncated copy,WARN,25,0.9901,2240/2504 | 2166/2514 | 1703/2511,counted in groups (= extra records for pairs): 25 of 25 groups,dim_client.near_duplicates
+20,dim_date,is_trading_day,2. Single-table,market holiday marked as a trading day,WARN,47,2.5725,2020-01-01 | 2020-01-20 | 2020-02-17 | 2020-04-10 | 2020-05-25,"approximate NYSE calendar (New Year, MLK, Presidents, Good Friday, Memorial, Juneteenth from 2022, July 4, Labor, Thanksgiving, Christmas); special closures not included",dim_date.is_trading_day
+21,dim_security,name,2. Single-table,near-duplicate rows (same business key),WARN,3,0.6,38 | 62 | 317 | 371 | 388 | 395,extra records; 6 rows involved — same real-world entity/event under more than one ID,dim_security.near_duplicates
+22,dim_client,client_id,3. Referential,clients with no facts in any fact table,WARN,25,0.9901,2501 | 2502 | 2503 | 2504 | 2505 | 2506,check against near-duplicate finding,dim_client.near_duplicates
+23,fact_portfolio_snapshot,aum,4. Cross-table,"repeated AUM 1,000.00 also appears in fact_fees.aum_basis",WARN,420,0.3242,1000.0,"snapshots=420, fees=386; same upstream default in both tables — returns and fees on these rows are distorted",fact_portfolio_snapshot.aum
+24,fact_portfolio_snapshot,return_ytd,4. Cross-table,YTD return < -90% (near total loss),WARN,497,0.3836,1463 | 1464 | 1465,,fact_portfolio_snapshot.return_ytd
+25,fact_portfolio_snapshot,snapshot_id,4. Cross-table,snapshot client-months with no fee row,WARN,7350,5.6736,22 | 42 | 59,un-billed months? check if they cluster by date/client,fact_portfolio_snapshot.snapshot_id
+26,fact_transactions,txn_date,4. Cross-table,Buy/Sell on a non-trading day,WARN,40649,13.6054,26 | 43 | 51,,fact_transactions.txn_date
+27,fact_transactions,txn_date,4. Cross-table,Buy/Sell on a market holiday (dim_date says trading day),WARN,3613,1.2093,2020-11-26 | 2024-05-27 | 2022-12-26,,fact_transactions.txn_date
+28,dim_benchmark,,0. File,file name differs from table name,INFO,0,0.0,dim_benchmark (2).csv,raw export has a suffix; clean output should use the plain table name,dim_benchmark.
+29,dim_date,,0. File,file name differs from table name,INFO,0,0.0,dim_date (2).csv,raw export has a suffix; clean output should use the plain table name,dim_date.
+30,dim_security,,0. File,file name differs from table name,INFO,0,0.0,dim_security (2).csv,raw export has a suffix; clean output should use the plain table name,dim_security.
+31,dim_advisor,advisor_id,1. Column,primary key unique,INFO,0,0.0,25 distinct of 25,PASS,dim_advisor.advisor_id
+32,dim_advisor,certifications,1. Column,blank / null-token values,INFO,6,24.0,None,"'None' is the text value for 'no certification', not a missing value",dim_advisor.certifications
+33,dim_benchmark,benchmark_id,1. Column,primary key unique,INFO,0,0.0,8 distinct of 8,PASS,dim_benchmark.benchmark_id
+34,dim_client,client_id,1. Column,primary key unique,INFO,0,0.0,"2,525 distinct of 2,525",PASS,dim_client.client_id
+35,dim_date,date_id,1. Column,primary key unique,INFO,0,0.0,"1,827 distinct of 1,827",PASS,dim_date.date_id
+36,dim_security,expense_ratio_bps,1. Column,blank / null-token values,INFO,281,56.2,<blank>,blank expected for single stocks (no expense ratio),dim_security.expense_ratio_bps
+37,dim_security,sector,1. Column,blank / null-token values,INFO,219,43.8,<blank>,blank expected for ETFs (funds span sectors),dim_security.sector
+38,dim_security,security_id,1. Column,primary key unique,INFO,0,0.0,500 distinct of 500,PASS,dim_security.security_id
+39,fact_fees,fee_id,1. Column,primary key unique,INFO,0,0.0,"122,197 distinct of 122,197",PASS,fact_fees.fee_id
+40,fact_portfolio_snapshot,snapshot_id,1. Column,primary key unique,INFO,0,0.0,"129,547 distinct of 129,547",PASS,fact_portfolio_snapshot.snapshot_id
+41,fact_transactions,price,1. Column,blank / null-token values,INFO,101597,34.0049,<blank>,blank expected for cash movements (Deposit/Withdrawal/Advisory Fee),fact_transactions.price
+42,fact_transactions,security_id,1. Column,blank / null-token values,INFO,101597,34.0049,<blank>,blank expected for cash movements (Deposit/Withdrawal/Advisory Fee),fact_transactions.security_id
+43,fact_transactions,shares,1. Column,blank / null-token values,INFO,101597,34.0049,<blank>,blank expected for cash movements (Deposit/Withdrawal/Advisory Fee),fact_transactions.shares
+44,fact_transactions,txn_id,1. Column,primary key unique,INFO,0,0.0,"298,772 distinct of 298,772",PASS,fact_transactions.txn_id
+45,fact_fees,amount,2. Single-table,amount recomputes from aum_basis x bps / 12,INFO,0,0.0,"122,197 of 122,197 rows reconcile; 0 not computable",fee formula confirmed — usable to verify repairs,fact_fees.amount
+46,fact_portfolio_snapshot,return_ytd,2. Single-table,percent-string returns ('9.28%') reconcile to benchmark + alpha,INFO,300,0.2316,9.28% | 19.52% | 13.35%,300 of 300 recover exactly when divided by 100,fact_portfolio_snapshot.return_ytd
+47,fact_transactions,shares,2. Single-table,negative-share rows reconcile to amount once sign is dropped,INFO,836,0.2798,,"evidence that the sign is the error, not the magnitude",fact_transactions.shares
+48,dim_client,advisor_id,3. Referential,RI dim_client.advisor_id -> dim_advisor.advisor_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,dim_client.advisor_id
+49,dim_security,benchmark_id,3. Referential,RI dim_security.benchmark_id -> dim_benchmark.benchmark_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,dim_security.benchmark_id
+50,dim_security,security_id,3. Referential,securities never traded,INFO,0,0.0,,,dim_security.security_id
+51,fact_fees,advisor_id,3. Referential,RI fact_fees.advisor_id -> dim_advisor.advisor_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_fees.advisor_id
+52,fact_fees,client_id,3. Referential,RI fact_fees.client_id -> dim_client.client_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_fees.client_id
+53,fact_fees,fee_date,3. Referential,RI fact_fees.fee_date -> dim_date.date,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_fees.fee_date
+54,fact_portfolio_snapshot,advisor_id,3. Referential,RI fact_portfolio_snapshot.advisor_id -> dim_advisor.advisor_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_portfolio_snapshot.advisor_id
+55,fact_portfolio_snapshot,benchmark_id,3. Referential,RI fact_portfolio_snapshot.benchmark_id -> dim_benchmark.benchmark_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_portfolio_snapshot.benchmark_id
+56,fact_portfolio_snapshot,client_id,3. Referential,RI fact_portfolio_snapshot.client_id -> dim_client.client_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_portfolio_snapshot.client_id
+57,fact_portfolio_snapshot,snapshot_date,3. Referential,RI fact_portfolio_snapshot.snapshot_date -> dim_date.date,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_portfolio_snapshot.snapshot_date
+58,fact_transactions,advisor_id,3. Referential,RI fact_transactions.advisor_id -> dim_advisor.advisor_id,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_transactions.advisor_id
+59,fact_transactions,security_id,3. Referential,RI fact_transactions.security_id -> dim_security.security_id after stripping '.0',INFO,0,0.0,,"match=100.0% — orphans are a format problem, not missing keys",fact_transactions.security_id
+60,fact_transactions,txn_date,3. Referential,RI fact_transactions.txn_date -> dim_date.date,INFO,0,0.0,,match=100.0% orphans=0 distinct_orphans=0 null_keys=0,fact_transactions.txn_date
+61,dim_client,client_since,4. Cross-table,client_since earlier than dim_date coverage,INFO,1549,61.3465,,"client_since is an attribute, not a date-table FK — note for Power BI",dim_client.client_since
+62,dim_client,risk_profile,4. Cross-table,blank risk_profile: benchmark used in snapshots,INFO,75,2.9703,{'3': 3942},the benchmark these clients were measured against hints at their real profile — verify before filling,dim_client.risk_profile
+63,fact_portfolio_snapshot,snapshot_date,4. Cross-table,first-of-month snapshot in the client's joining month,INFO,930,0.7179,61 | 111 | 496,snapshot dated the 1st of the month the client joined — likely legitimate month-level grain,fact_portfolio_snapshot.snapshot_date
+64,fact_transactions,client_id,4. Cross-table,where orphan client_ids fall vs the dim_client ID range,INFO,200,0.0669,orphans 2702–3192,dim_client IDs run 1–2525; 200 of 200 orphan rows fall outside that range,fact_transactions.client_id
+65,fact_transactions,txn_date,4. Cross-table,Advisory Fee/Deposit/Dividend/Withdrawal on a non-trading day,INFO,44350,14.8441,1 | 6 | 8,,fact_transactions.txn_date

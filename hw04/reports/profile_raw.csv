@@ -1,0 +1,76 @@
+table,column,rows,expected_type,blank_count,blank_pct,null_token_values,distinct_count,distinct_pct,top_values,top_value_share_pct,dominant_shapes,shape_count,mixed_formats,type_fail_count,type_fail_pct,type_fail_examples,whitespace_lead_trail,whitespace_double,case_variants,numeric_min,numeric_max,min_length,max_length
+dim_advisor,advisor_id,25,int,0,0.0,,25,100.0,1 | 14 | 24 | 23 | 22,4.0,9 (100.0%),1,False,0,0.0,,0,0,0,1,25,1,2
+dim_advisor,first_name,25,text,0,0.0,,24,96.0,Christopher | Danielle | Joshua | Craig | Jeremy,8.0,Aa (100.0%),1,False,0,0.0,,0,0,0,,,4,11
+dim_advisor,last_name,25,text,0,0.0,,24,96.0,Johnson | Walker | Ramirez | Hall | Roberts,8.0,Aa (100.0%),1,False,0,0.0,,0,0,0,,,3,10
+dim_advisor,region,25,text,0,0.0,,5,20.0,Northeast | Southeast | Mid-Atlantic | West | Midwest,36.0,Aa (76.0%); Aa-Aa (24.0%),2,False,0,0.0,,0,0,0,,,4,12
+dim_advisor,years_experience,25,int,0,0.0,,17,68.0,24 | 28 | 15 | 10 | 23,12.0,9 (100.0%),1,False,0,0.0,,0,0,0,4,28,1,2
+dim_advisor,aum_target_mm,25,int,0,0.0,,5,20.0,50 | 150 | 75 | 200 | 100,24.0,9 (100.0%),1,False,0,0.0,,0,0,0,50,200,2,3
+dim_advisor,certifications,25,text,6,24.0,None,4,21.05,"CFA | CFP, CFA | CFP, CIMA | CFP",31.58,"A, A (52.6%); A (47.4%)",2,False,0,0.0,,0,0,0,,,3,9
+dim_benchmark,benchmark_id,8,int,0,0.0,,8,100.0,1 | 2 | 3 | 4 | 5,12.5,9 (100.0%),1,False,0,0.0,,0,0,0,1,8,1,1
+dim_benchmark,name,8,text,0,0.0,,8,100.0,S&P 500 | Bloomberg US Agg Bond | 60/40 Blend | MSCI EAFE | Russell 2000,12.5,9/9 Aa (12.5%); A A (12.5%); A Aa Aa (12.5%),8,False,0,0.0,,0,0,0,,,7,21
+dim_benchmark,asset_class,8,text,0,0.0,,7,87.5,Multi-Asset | Equity | Fixed Income | International | Small Cap,25.0,Aa (50.0%); Aa Aa (25.0%); Aa-Aa (25.0%),3,False,0,0.0,,0,0,0,,,4,13
+dim_benchmark,ticker_proxy,8,text,0,0.0,,8,100.0,SPY | AGG | BLEND_6040 | EFA | IWM,12.5,A (75.0%); A_9 (12.5%); A_A (12.5%),3,False,0,0.0,,0,0,0,,,3,10
+dim_client,client_id,2525,int,0,0.0,,2525,100.0,1 | 1688 | 1681 | 1682 | 1683,0.04,9 (100.0%),1,False,0,0.0,,0,0,0,1,2525,1,4
+dim_client,first_name,2525,text,0,0.0,,505,20.0,Michael | James | Jennifer | Robert | David,1.98,Aa (100.0%),1,False,0,0.0,,0,0,0,,,2,11
+dim_client,last_name,2525,text,0,0.0,,778,30.81,Smith | Johnson | Miller | Williams | Wilson,2.53,Aa (100.0%),1,False,0,0.0,,0,0,0,,,2,11
+dim_client,age,2525,int,0,0.0,,53,2.1,75 | 41 | 76 | 78 | 54,2.34,9 (100.0%),1,False,0,0.0,,0,0,0,28,80,2,2
+dim_client,city,2525,text,0,0.0,,2291,90.73,Jenniferstad | Jamesmouth | North Melissa | North Joseph | Michaelton,0.2,Aa (51.1%); Aa Aa (48.9%),2,False,0,0.0,,0,0,0,,,7,22
+dim_client,state,2525,state_code,0,0.0,,27,1.07,PA | NY | NJ | FL | TX,16.4,A (96.9%); Aa (2.0%); Aa Aa (1.1%),3,True,78,3.0891,Pennsylvania | New York | New Jersey,0,0,0,,,2,12
+dim_client,zip_code,2525,zip,0,0.0,,2483,98.34,59440 | 26619 | 72213 | 88686 | 73097,0.08,9 (100.0%),1,False,0,0.0,,0,0,0,533,99822,5,5
+dim_client,risk_profile,2525,text,76,3.01,,5,0.2,Balanced | Moderately Conservative | Conservative | Moderately Aggressive | Aggressive,31.11,Aa (60.3%); Aa Aa (39.7%),2,False,0,0.0,,0,0,0,,,8,23
+dim_client,client_tier,2525,text,0,0.0,,3,0.12,Retail | HNW | UHNW,60.55,Aa (60.6%); A (39.4%),2,False,0,0.0,,0,0,0,,,3,6
+dim_client,primary_account_type,2525,text,0,0.0,,5,0.2,Trust | 529 | Roth IRA | Taxable | IRA,21.7,Aa (40.9%); 9 (20.7%); Aa A (19.4%),4,False,0,0.0,,0,0,0,,,3,8
+dim_client,initial_aum,2525,float,0,0.0,,2500,99.01,25212613.34 | 279793.21 | 331606.56 | 155175.44 | 68197.14,0.08,9.9 (100.0%),1,False,0,0.0,,0,0,0,50016.07,49901583.57,7,11
+dim_client,client_since,2525,date,0,0.0,,1651,65.39,2022-04-16 | 2016-09-28 | 2020-07-27 | 2015-06-13 | 2015-07-06,0.2,9-9-9 (100.0%),1,False,0,0.0,,0,0,0,,,10,10
+dim_client,advisor_id,2525,int,0,0.0,,25,0.99,16 | 9 | 4 | 23 | 22,4.71,9 (100.0%),1,False,0,0.0,,0,0,0,1,25,1,2
+dim_client,is_active,2525,bool,0,0.0,,2,0.08,True | False,93.03,Aa (100.0%),1,False,0,0.0,,0,0,0,,,4,5
+dim_date,date_id,1827,int,0,0.0,,1827,100.0,1 | 1228 | 1226 | 1225 | 1224,0.05,9 (100.0%),1,False,0,0.0,,0,0,0,1,1827,1,4
+dim_date,date,1827,date,0,0.0,,1827,100.0,2020-01-01 | 2023-05-12 | 2023-05-10 | 2023-05-09 | 2023-05-08,0.05,9-9-9 (100.0%),1,False,0,0.0,,0,0,0,,,10,10
+dim_date,year,1827,int,0,0.0,,5,0.27,2020 | 2024 | 2021 | 2022 | 2023,20.03,9 (100.0%),1,False,0,0.0,,0,0,0,2020,2024,4,4
+dim_date,quarter,1827,int,0,0.0,,4,0.22,3 | 4 | 2 | 1,25.18,9 (100.0%),1,False,0,0.0,,0,0,0,1,4,1,1
+dim_date,month,1827,int,0,0.0,,12,0.66,1 | 3 | 5 | 7 | 8,8.48,9 (100.0%),1,False,0,0.0,,0,0,0,1,12,1,2
+dim_date,month_name,1827,text,0,0.0,,12,0.66,January | March | May | July | August,8.48,Aa (100.0%),1,False,0,0.0,,0,0,0,,,3,9
+dim_date,week_of_year,1827,int,0,0.0,,53,2.9,1 | 28 | 30 | 31 | 32,1.92,9 (100.0%),1,False,0,0.0,,0,0,0,1,53,1,2
+dim_date,day_of_week,1827,text,0,0.0,,7,0.38,Wednesday | Thursday | Friday | Saturday | Sunday,14.29,Aa (100.0%),1,False,0,0.0,,0,0,0,,,6,9
+dim_date,is_month_end,1827,flag01,0,0.0,,2,0.11,0 | 1,96.72,9 (100.0%),1,False,0,0.0,,0,0,0,0,1,1,1
+dim_date,is_quarter_end,1827,flag01,0,0.0,,2,0.11,0 | 1,98.91,9 (100.0%),1,False,0,0.0,,0,0,0,0,1,1,1
+dim_date,is_year_end,1827,flag01,0,0.0,,2,0.11,0 | 1,99.73,9 (100.0%),1,False,0,0.0,,0,0,0,0,1,1,1
+dim_date,is_trading_day,1827,flag01,0,0.0,,2,0.11,1 | 0,71.43,9 (100.0%),1,False,0,0.0,,0,0,0,0,1,1,1
+dim_security,security_id,500,int,0,0.0,,500,100.0,1 | 330 | 343 | 342 | 341,0.2,9 (100.0%),1,False,0,0.0,,0,0,0,1,500,1,3
+dim_security,ticker,500,text,0,0.0,,500,100.0,RKX | JPBB | RANK | NJQ | KVG,0.2,A (100.0%),1,False,0,0.0,,0,0,0,,,3,4
+dim_security,name,500,text,0,0.0,,497,99.4,Davis PLC Fund | Jones Inc Fund | Graham Group Inc. | Kelly-Santiago Inc. | Guerrero Inc Fund,0.4,"Aa, Aa a Aa Aa. (21.2%); Aa-Aa Aa. (18.2%); Aa-Aa Aa (17.4%)",10,False,0,0.0,,0,0,0,,,11,39
+dim_security,asset_class,500,text,0,0.0,,4,0.8,Equity | Fixed Income | Alternative | Cash Equivalent,56.2,Aa (67.8%); Aa Aa (32.2%),2,False,0,0.0,,0,0,0,,,6,15
+dim_security,sector,500,text,219,43.8,,11,3.91,Consumer Staples | Communication Services | Utilities | Technology | Energy,12.46,Aa (60.5%); Aa Aa (39.5%),2,False,0,0.0,,0,0,0,,,6,22
+dim_security,benchmark_id,500,int,0,0.0,,6,1.2,2 | 1 | 5 | 4 | 3,24.0,9 (100.0%),1,False,0,0.0,,0,0,0,1,7,1,1
+dim_security,is_etf,500,bool,0,0.0,,2,0.4,False | True,56.2,Aa (100.0%),1,False,0,0.0,,0,0,0,,,4,5
+dim_security,expense_ratio_bps,500,float,281,56.2,,82,37.44,17.0 | 70.0 | 87.0 | 84.0 | 61.0,3.2,9.9 (100.0%),1,False,0,0.0,,0,0,0,3.0,95.0,3,4
+fact_fees,fee_id,122197,int,0,0.0,,122197,100.0,1 | 81463 | 81475 | 81474 | 81473,0.0,9 (100.0%),1,False,0,0.0,,0,0,0,1,122197,1,6
+fact_fees,client_id,122197,int,0,0.0,,2500,2.05,2292 | 2461 | 236 | 1167 | 1771,0.05,9 (100.0%),1,False,0,0.0,,0,0,0,1,2500,1,4
+fact_fees,advisor_id,122197,int,0,0.0,,25,0.02,4 | 16 | 9 | 22 | 23,4.79,9 (100.0%),1,False,0,0.0,,0,0,0,1,25,1,2
+fact_fees,fee_date,122197,date,0,0.0,,60,0.05,2022-12-01 | 2022-11-01 | 2023-02-01 | 2022-10-01 | 2023-01-01,1.98,9-9-9 (100.0%),1,False,0,0.0,,0,0,0,,,10,10
+fact_fees,fee_type,122197,text,0,0.0,,4,0.0,Management | Advisory | Custodial | Performance,58.2,Aa (100.0%),1,False,0,0.0,,0,0,0,,,8,11
+fact_fees,aum_basis,122197,float,0,0.0,,121755,99.64,1000.0 | 94487.37 | 467711.05 | 330948.97 | 132723.05,0.32,9.9 (100.0%),1,False,0,0.0,,0,0,0,1000.0,82386642.91,6,11
+fact_fees,bps_charged,122197,float,0,0.0,,5217,4.27,87.69 | 87.64 | 88.38 | 88.12 | 87.72,0.1,9.9 (100.0%),1,False,0,0.0,,0,0,0,25.56,100.38,4,6
+fact_fees,amount,122197,float,0,0.0,,81649,66.82,0.75 | 0.74 | 0.76 | 0.73 | 0.72,0.08,9.9 (100.0%),1,False,0,0.0,,0,0,0,0.65,29412.47,3,8
+fact_portfolio_snapshot,snapshot_id,129547,int,0,0.0,,129547,100.0,1 | 86360 | 86373 | 86372 | 86371,0.0,9 (100.0%),1,False,0,0.0,,0,0,0,1,129547,1,6
+fact_portfolio_snapshot,client_id,129547,int,0,0.0,,2500,1.93,1 | 1413 | 1453 | 1452 | 1450,0.05,9 (100.0%),1,False,0,0.0,,0,0,0,1,2500,1,4
+fact_portfolio_snapshot,advisor_id,129547,int,0,0.0,,25,0.02,4 | 16 | 9 | 22 | 23,4.79,9 (100.0%),1,False,0,0.0,,0,0,0,1,25,1,2
+fact_portfolio_snapshot,benchmark_id,129547,int,0,0.0,,3,0.0,8 | 3 | 1,38.69,9 (100.0%),1,False,0,0.0,,0,0,0,1,8,1,1
+fact_portfolio_snapshot,snapshot_date,129547,date,0,0.0,,60,0.05,2022-12-01 | 2023-01-01 | 2023-02-01 | 2022-11-01 | 2023-03-01,1.93,9-9-9 (100.0%),1,False,0,0.0,,0,0,0,,,10,10
+fact_portfolio_snapshot,year,129547,int,0,0.0,,5,0.0,2023 | 2022 | 2024 | 2021 | 2020,22.29,9 (100.0%),1,False,0,0.0,,0,0,0,2020,2024,4,4
+fact_portfolio_snapshot,month,129547,int,0,0.0,,12,0.01,12 | 11 | 10 | 9 | 8,8.61,9 (100.0%),1,False,0,0.0,,0,0,0,1,12,1,2
+fact_portfolio_snapshot,aum,129547,float,0,0.0,,129062,99.63,1000.0 | 146637.73 | 462434.26 | 81668.53 | 261696.83,0.32,9.9 (100.0%),1,False,0,0.0,,0,0,0,1000.0,82386642.91,6,11
+fact_portfolio_snapshot,return_ytd,129547,float,0,0.0,,112233,86.63,0.0 | -0.963806 | -0.01472 | -0.005052 | -0.953831,0.05,9.9 (64.2%); -9.9 (35.5%); 9.9% (0.1%),8,True,300,0.2316,9.28% | 19.52% | 13.35%,0,0,0,-97.04,1170.15,3,9
+fact_portfolio_snapshot,benchmark_return_ytd,129547,float,0,0.0,,180,0.14,-0.171382 | 0.006808 | -0.003092 | -0.148369 | -0.004323,0.75,9.9 (70.9%); -9.9 (29.1%),2,False,0,0.0,,0,0,0,-0.23978,0.273845,7,9
+fact_portfolio_snapshot,active_alpha_ytd,129547,float,0,0.0,,85398,65.92,0.001008 | 0.004016 | 0.000908 | -0.000962 | 0.001002,0.01,9.9 (54.6%); -9.9 (44.8%); -9.9a-9 (0.2%),6,False,0,0.0,,0,0,0,-1.22245,94.569541,3,9
+fact_portfolio_snapshot,cash_pct,129547,float,0,0.0,,701,0.54,0.0693 | 0.0253 | 0.0585 | 0.0527 | 0.0569,0.17,9.9 (100.0%),1,False,0,0.0,,0,0,0,0.01,0.08,4,6
+fact_portfolio_snapshot,account_type,129547,text,0,0.0,,5,0.0,Trust | 529 | Roth IRA | IRA | Taxable,21.78,Aa (40.7%); 9 (20.8%); Aa A (19.3%),4,False,0,0.0,,0,0,0,,,3,8
+fact_transactions,txn_id,298772,int,0,0.0,,298772,100.0,1 | 199207 | 199187 | 199186 | 199185,0.0,9 (100.0%),1,False,0,0.0,,0,0,0,1,298772,1,6
+fact_transactions,client_id,298772,int,0,0.0,,2700,0.9,1987 | 1798 | 765 | 759 | 820,0.06,9 (100.0%),1,False,0,0.0,,0,0,0,1,3192,1,4
+fact_transactions,advisor_id,298772,int,0,0.0,,25,0.01,16 | 9 | 23 | 4 | 20,4.86,9 (100.0%),1,False,0,0.0,,0,0,0,1,25,1,2
+fact_transactions,security_id,298772,int,101597,34.0,,500,0.25,447.0 | 430.0 | 74.0 | 128.0 | 405.0,0.28,9.9 (100.0%),1,False,197175,100.0,45.0 | 174.0 | 478.0,0,0,0,1.0,500.0,3,5
+fact_transactions,txn_date,298772,date,0,0.0,,1826,0.61,2022-12-08 | 2023-01-17 | 2023-04-10 | 2023-06-22 | 2023-09-14,0.08,9-9-9 (100.0%),1,False,0,0.0,,0,0,0,,,10,10
+fact_transactions,txn_type,298772,text,0,0.0,,6,0.0,Buy | Sell | Dividend | Deposit | Advisory Fee,27.97,Aa (88.0%); Aa Aa (12.0%),2,False,0,0.0,,0,0,0,,,3,12
+fact_transactions,shares,298772,float,101597,34.0,,193253,98.01,112.3942 | 68.61 | 210.4826 | 452.3522 | 209.5519,0.0,9.9 (99.6%); -9.9 (0.4%),2,False,0,0.0,,0,0,0,-499.6323,499.9981,3,9
+fact_transactions,price,298772,float,101597,34.0,,48104,24.4,446.16 | 106.68 | 364.49 | 248.92 | 77.05,0.01,9.9 (100.0%),1,False,0,0.0,,0,0,0,10.0,500.0,4,6
+fact_transactions,amount,298772,float,0,0.0,,292741,97.98,7337.0 | 1268.58 | 672.58 | 203.25 | 536.1,0.0,9.9 (100.0%),1,False,0,0.0,,0,0,0,13.33,249302.33,4,9

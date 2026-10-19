@@ -32,10 +32,12 @@ from __future__ import annotations   # lets "str | None" hints work on Python 3.
 import argparse
 import re
 import sys
-from typing import Optional
 from pathlib import Path
 
 import pandas as pd
+from pandas.tseries.holiday import (AbstractHolidayCalendar, GoodFriday, Holiday, USLaborDay,
+                                    USMartinLutherKingJr, USMemorialDay, USPresidentsDay,
+                                    USThanksgivingDay, nearest_workday, sunday_to_monday)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -102,6 +104,27 @@ def to_date(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
 
 
+def int_text(s: pd.Series) -> pd.Series:
+    """Number/bool Series -> integer text ('2020', not '2020.0'), safe when some values are missing."""
+    return s.astype("Int64").astype(str)
+
+
+class MarketHolidays(AbstractHolidayCalendar):
+    """Approximate NYSE full-day holidays (special one-off closures not included)."""
+    rules = [
+        Holiday("New Year's Day", month=1, day=1, observance=sunday_to_monday),
+        USMartinLutherKingJr, USPresidentsDay, GoodFriday, USMemorialDay,
+        Holiday("Juneteenth", month=6, day=19, start_date="2022-01-01", observance=nearest_workday),
+        Holiday("Independence Day", month=7, day=4, observance=nearest_workday),
+        USLaborDay, USThanksgivingDay,
+        Holiday("Christmas", month=12, day=25, observance=nearest_workday),
+    ]
+
+
+def market_holidays(start, end) -> pd.DatetimeIndex:
+    return MarketHolidays().holidays(start=start, end=end)
+
+
 def shapes_of(s: pd.Series) -> pd.Series:
     """Value 'shape': upper->A, lower->a, digit->9, runs collapsed (vectorised).
     'PA'->'A', 'Pennsylvania'->'Aa', '45.0'->'9.9', '9.28%'->'9.9%', '-1.9e-05'->'-9.9a-9'."""
@@ -112,8 +135,11 @@ def shapes_of(s: pd.Series) -> pd.Series:
 
 
 def format_of(s: pd.Series) -> pd.Series:
-    """Shape with a leading minus removed: the sign is a value, not a format."""
-    return shapes_of(s).str.replace(r"^-", "", regex=True)
+    """Shape used for the mixed-format check. Two things are NOT format differences:
+    a leading minus (the sign is part of the value) and scientific notation
+    ('-1.9e-05' is the same kind of number as '0.000019')."""
+    f = shapes_of(s).str.replace(r"^-", "", regex=True)
+    return f.str.replace(r"^9(\.9)?[aA][-+]?9$", "9.9", regex=True)
 
 
 def count_by(s: pd.Series, fn) -> pd.Series:
@@ -303,8 +329,13 @@ CONDITIONAL_BLANKS = {
 FINDINGS = []
 
 
-def add(table, column, group, check, severity, rows, total, example="", detail=""):
-    """Record one finding. Rows=0 findings are skipped unless severity is INFO."""
+def add(table, column, group, check, severity, rows, total, example="", detail="", issue_group=""):
+    """Record one finding. Rows=0 findings are skipped unless severity is INFO.
+
+    rows_affected is counted per finding. Several checks can look at the same bad rows
+    (e.g. a spelled-out state fails the type check AND the allowed-list check), so
+    findings that share an `issue_group` overlap — do not add their rows together.
+    Default issue_group is table.column; related findings across columns override it."""
     if rows == 0 and severity != "INFO":
         return
     FINDINGS.append({
@@ -312,6 +343,7 @@ def add(table, column, group, check, severity, rows, total, example="", detail="
         "severity": severity, "rows_affected": int(rows),
         "pct_rows": round(100 * rows / total, 4) if total else 0.0,
         "example": str(example)[:200], "detail": detail,
+        "issue_group": issue_group or f"{table}.{column}",
     })
 
 
@@ -328,6 +360,9 @@ def load_tables(raw_dir: Path) -> dict:
         matches = sorted(raw_dir.glob(cfg["file"]))
         if not matches:
             sys.exit(f"Missing raw file for {name}: {raw_dir / cfg['file']}")
+        if len(matches) > 1:     # never guess which export is the real one
+            sys.exit(f"More than one file matches {cfg['file']}: {[m.name for m in matches]} — "
+                     f"remove or rename the extras, or use --raw-dir")
         path = matches[0]
         df = pd.read_csv(path, dtype=str, keep_default_na=False)   # TEXT ONLY — see briefing rule
         tables[name] = df
@@ -340,16 +375,20 @@ def load_tables(raw_dir: Path) -> dict:
                 len(df), f"{len(df)} vs {cfg['rows']}")
         extra = set(df.columns) - set(cfg["columns"])
         missing = set(cfg["columns"]) - set(df.columns)
-        if extra or missing:
-            add(name, ",".join(extra | missing), "0. File", "columns differ from schema", "ERROR",
-                len(df), len(df), f"extra={extra} missing={missing}")
+        if extra:
+            add(name, ",".join(sorted(extra)), "0. File", "columns not in schema", "WARN",
+                len(df), len(df), f"extra={sorted(extra)}", "not audited by the rule checks")
+        if missing:
+            # Groups 2-4 depend on these columns, so stop with a clear message instead of a KeyError later
+            sys.exit(f"{name} ({path.name}) is missing expected columns {sorted(missing)} — "
+                     f"fix the file or update SCHEMA before auditing")
     return tables
 
 
 # ---------------------------------------------------------------------------
 # GENERIC PROFILER — works on any column of any table
 # ---------------------------------------------------------------------------
-def profile_column(table: str, col: str, s: pd.Series, expected_type: Optional[str] = None) -> dict:
+def profile_column(table: str, col: str, s: pd.Series, expected_type: str | None = None) -> dict:
     n = len(s)
     blank = is_blank(s)
     nonblank = s[~blank]
@@ -363,9 +402,12 @@ def profile_column(table: str, col: str, s: pd.Series, expected_type: Optional[s
     lead_trail_ws = (s != s.str.strip()).sum()
     double_space = s.str.contains(r"\s{2,}", regex=True).sum()
 
-    # same value written with different case/spacing, e.g. "Equity" vs "equity "
-    norm = nonblank.str.strip().str.lower()
-    case_variants = nonblank.nunique() - norm.nunique()
+    # Same value written with different case, e.g. "Equity" vs "equity".
+    # Counts ROWS that are not the most common spelling of their value.
+    # (Whitespace is reported separately, so it is not stripped here.)
+    vc = nonblank.value_counts()
+    by_lower = vc.groupby(vc.index.str.lower())
+    case_variants = int((by_lower.sum() - by_lower.max())[by_lower.size() > 1].sum())
 
     nums = to_num_lenient(nonblank)
     numeric_share = nums.notna().mean() if len(nonblank) else 0
@@ -443,8 +485,12 @@ def check_columns(tables: dict, profile: pd.DataFrame):
             if p.whitespace_lead_trail:
                 add(t, col, G, "leading/trailing whitespace", "WARN", p.whitespace_lead_trail, n,
                     examples(s[s != s.str.strip()].map(repr)), "breaks equality joins and group-bys")
+            if p.whitespace_double:
+                add(t, col, G, "double spaces inside value", "WARN", p.whitespace_double, n,
+                    examples(s[s.str.contains(r"\s{2,}", regex=True)].map(repr)))
             if p.case_variants:
-                add(t, col, G, "same value with different case", "WARN", p.case_variants, n, "", "")
+                add(t, col, G, "same value with different case", "WARN", p.case_variants, n, "",
+                    "rows that are not the most common spelling of their value")
 
             # Allowed values
             if "allowed" in rule:
@@ -476,13 +522,17 @@ def check_columns(tables: dict, profile: pd.DataFrame):
 
         # Primary key: unique and not blank
         pk = cfg["pk"]
+        # Duplicate counts below = EXTRA records (a pair counts as 1); rows involved are in `detail`
         dup = df[pk].duplicated(keep=False)
-        add(t, pk, G, "primary key duplicated", "ERROR", dup.sum(), n, examples(df.loc[dup, pk]))
+        add(t, pk, G, "primary key duplicated", "ERROR", df[pk].duplicated().sum(), n,
+            examples(df.loc[dup, pk]), f"{dup.sum()} rows involved")
         add(t, pk, G, "primary key unique", "INFO", 0, n, f"{df[pk].nunique():,} distinct of {n:,}",
             "PASS" if not dup.any() else "FAIL")
         for uc in cfg.get("unique", []):
-            d = df[uc].duplicated(keep=False) & ~is_blank(df[uc])
-            add(t, uc, G, "natural key duplicated", "ERROR", d.sum(), n, examples(df.loc[d, uc]))
+            nb = ~is_blank(df[uc])
+            d = df[uc].duplicated(keep=False) & nb
+            add(t, uc, G, "natural key duplicated", "ERROR", (df[uc].duplicated() & nb).sum(), n,
+                examples(df.loc[d, uc]), f"{d.sum()} rows involved")
 
 
 # ---------------------------------------------------------------------------
@@ -496,53 +546,82 @@ def check_single_table(tables: dict):
 
         # Exact duplicate rows ignoring the surrogate key
         d = df.drop(columns=pk).duplicated(keep=False)
-        add(t, "(all but PK)", G, "exact duplicate rows (ignoring PK)", "ERROR", d.sum(), n,
-            examples(df.loc[d, pk]))
+        add(t, "(all but PK)", G, "exact duplicate rows (ignoring PK)", "ERROR", df.drop(columns=pk).duplicated().sum(),
+            n, examples(df.loc[d, pk]), f"extra records; {d.sum()} rows involved")
 
         # Near-duplicates: normalise text (case, spaces) and compare business key
         if cfg.get("near_dup"):
             key = df[cfg["near_dup"]].apply(lambda c: c.str.strip().str.lower())
             nd = key.duplicated(keep=False)
-            add(t, "+".join(cfg["near_dup"]), G, "near-duplicate rows (same business key)", "WARN" if t.startswith("dim") else "ERROR",
-                nd.sum(), n, examples(df.loc[nd, pk], 6), "same real-world entity/event under more than one ID")
+            add(t, "+".join(cfg["near_dup"]), G, "near-duplicate rows (same business key)",
+                "WARN" if t.startswith("dim") else "ERROR", key.duplicated().sum(), n, examples(df.loc[nd, pk], 6),
+                f"extra records; {nd.sum()} rows involved — same real-world entity/event under more than one ID",
+                issue_group=f"{t}.near_duplicates")
 
     # --- row-level contradictions (columns of the same row disagree) ---
     c = tables["dim_client"]
     aum, n = to_num(c.initial_aum), len(c)
+    # ASSUMPTION: tier cut-offs are not given in the briefing; they are the standard industry
+    # bands (Retail < $500k, HNW < $5M, UHNW >= $5M). The data agrees: every readable row fits.
     tier_from_aum = pd.cut(aum, [0, 500_000, 5_000_000, float("inf")], labels=["Retail", "HNW", "UHNW"], right=False)
-    bad = tier_from_aum.astype(str) != c.client_tier
+    bad = aum.notna() & (tier_from_aum.astype(str) != c.client_tier)      # unreadable AUM is a type issue, not a contradiction
     add("dim_client", "client_tier/initial_aum", G, "tier contradicts initial AUM (<500k Retail, <5M HNW, else UHNW)",
         "WARN", bad.sum(), n, examples(c.loc[bad, "client_id"]))
 
     # Near-duplicate clients: is one name a truncated copy of the other?
     key = c[SCHEMA["dim_client"]["near_dup"]].apply(lambda col: col.str.strip().str.lower()).agg("|".join, axis=1)
-    grp = c.assign(_k=key)[key.duplicated(keep=False)].groupby("_k")
-    trunc = grp.last_name.apply(lambda names: any(a != b and b.startswith(a) for a in names for b in names))
+    cc = c.assign(_k=key, _ln=c.last_name.str.strip().str.lower())
+    grp = cc[key.duplicated(keep=False)].groupby("_k")
+
+    def has_truncated(names):
+        names = [x for x in names if x]                    # a blank name would "prefix-match" everything
+        return any(a != b and b.startswith(a) for a in names for b in names)
+
+    trunc = grp._ln.apply(has_truncated)
     if len(trunc):
-        add("dim_client", "last_name", G, "near-duplicate pairs where one last_name is a truncated copy", "WARN",
+        add("dim_client", "last_name", G, "near-duplicate groups where one last_name is a truncated copy", "WARN",
             int(trunc.sum()), n, examples(grp.client_id.apply(lambda x: "/".join(x))[trunc]),
-            f"{int(trunc.sum())} of {len(trunc)} pairs; the other pairs differ in other ways — inspect")
+            f"counted in groups (= extra records for pairs): {int(trunc.sum())} of {len(trunc)} groups",
+            issue_group="dim_client.near_duplicates")
 
     d = tables["dim_date"]
     dt = to_date(d.date)
+    ok = dt.notna()                      # rows with an unreadable date are reported by the type check, not here
     checks = {
-        "year": dt.dt.year.astype(str) != d.year,
-        "quarter": dt.dt.quarter.astype(str) != d.quarter,
-        "month": dt.dt.month.astype(str) != d.month,
+        "year": int_text(dt.dt.year) != d.year,
+        "quarter": int_text(dt.dt.quarter) != d.quarter,
+        "month": int_text(dt.dt.month) != d.month,
         "month_name": dt.dt.month_name() != d.month_name,
         "day_of_week": dt.dt.day_name() != d.day_of_week,
-        "week_of_year": dt.dt.isocalendar().week.astype(str) != d.week_of_year,
-        "is_month_end": dt.dt.is_month_end.astype(int).astype(str) != d.is_month_end,
-        "is_quarter_end": dt.dt.is_quarter_end.astype(int).astype(str) != d.is_quarter_end,
-        "is_year_end": dt.dt.is_year_end.astype(int).astype(str) != d.is_year_end,
+        "week_of_year": int_text(dt.dt.isocalendar().week) != d.week_of_year,
+        "is_month_end": int_text(dt.dt.is_month_end) != d.is_month_end,
+        "is_quarter_end": int_text(dt.dt.is_quarter_end) != d.is_quarter_end,
+        "is_year_end": int_text(dt.dt.is_year_end) != d.is_year_end,
         "is_trading_day(weekend)": (dt.dt.dayofweek >= 5) & (d.is_trading_day == "1"),
     }
     for col, bad in checks.items():
+        bad = ok & bad
         add("dim_date", col, G, "derived calendar field disagrees with date", "ERROR", bad.sum(), len(d),
             examples(d.loc[bad, "date"]))
-    full = pd.date_range(dt.min(), dt.max())
-    add("dim_date", "date", G, "calendar gaps (missing days)", "ERROR", len(full.difference(dt)), len(d),
-        examples(pd.Series(full.difference(dt))))
+
+    # Trading-day flag, both directions: market holidays (NYSE rules, approximated) vs weekdays
+    hol = market_holidays(dt.min(), dt.max())
+    is_hol = dt.isin(hol)
+    weekday = ok & (dt.dt.dayofweek < 5)
+    bad = is_hol & (d.is_trading_day == "1")
+    add("dim_date", "is_trading_day", G, "market holiday marked as a trading day", "WARN", bad.sum(), len(d),
+        examples(d.loc[bad, "date"], 5), "approximate NYSE calendar (New Year, MLK, Presidents, Good Friday, Memorial, "
+        "Juneteenth from 2022, July 4, Labor, Thanksgiving, Christmas); special closures not included")
+    bad = weekday & ~is_hol & (d.is_trading_day == "0")
+    add("dim_date", "is_trading_day", G, "ordinary weekday marked as non-trading", "WARN", bad.sum(), len(d),
+        examples(d.loc[bad, "date"]))
+
+    # Gaps measured against the schema's expected range, not just min..max found in the file
+    rule = SCHEMA["dim_date"]["columns"]["date"]
+    full = pd.date_range(rule["min"], rule["max"])
+    missing_days = full.difference(dt.dropna())
+    add("dim_date", "date", G, f"calendar gaps vs expected {rule['min']}..{rule['max']}", "ERROR", len(missing_days),
+        len(full), examples(pd.Series(missing_days.strftime("%Y-%m-%d"))))
 
     s = tables["dim_security"]
     etf = s.is_etf == "True"
@@ -554,12 +633,17 @@ def check_single_table(tables: dict):
         (etf == has_sector).sum(), len(s), examples(s.loc[etf == has_sector, "security_id"]))
 
     f = tables["fact_fees"]
+    # ASSUMPTION: bps_charged is an ANNUAL rate billed monthly (hence / 12). Not stated in the
+    # briefing — the data confirms it (the INFO line below shows how many rows reconcile).
     calc = to_num(f.aum_basis) * to_num(f.bps_charged) / 10_000 / 12
-    bad = (calc - to_num(f.amount)).abs() > 0.05
+    amt = to_num(f.amount)
+    computable = calc.notna() & amt.notna()
+    bad = computable & ((calc - amt).abs() > 0.05)
     add("fact_fees", "amount", G, "amount != aum_basis x bps / 10,000 / 12 (tol $0.05)", "ERROR", bad.sum(), len(f),
         examples(f.loc[bad, "fee_id"]))
     add("fact_fees", "amount", G, "amount recomputes from aum_basis x bps / 12", "INFO", 0, len(f),
-        f"{(~bad).sum():,} of {len(f):,} rows reconcile", "fee formula confirmed — usable to verify repairs")
+        f"{(computable & ~bad).sum():,} of {len(f):,} rows reconcile; {(~computable).sum():,} not computable",
+        "fee formula confirmed — usable to verify repairs")
 
     p = tables["fact_portfolio_snapshot"]
     r, b, a = to_num(p.return_ytd), to_num(p.benchmark_return_ytd), to_num(p.active_alpha_ytd)
@@ -575,10 +659,10 @@ def check_single_table(tables: dict):
             "INFO", match.sum(), len(p), examples(p.loc[pct, "return_ytd"]),
             f"{match.sum()} of {pct.sum()} recover exactly when divided by 100")
     sd = to_date(p.snapshot_date)
-    bad = (sd.dt.year.astype(str) != p.year) | (sd.dt.month.astype(str) != p.month)
+    bad = sd.notna() & ((int_text(sd.dt.year) != p.year) | (int_text(sd.dt.month) != p.month))
     add("fact_portfolio_snapshot", "year/month", G, "year/month disagree with snapshot_date", "ERROR", bad.sum(), len(p),
         examples(p.loc[bad, "snapshot_id"]))
-    bad = sd.dt.day != 1
+    bad = sd.notna() & (sd.dt.day != 1)
     add("fact_portfolio_snapshot", "snapshot_date", G, "snapshot not on 1st of month", "WARN", bad.sum(), len(p))
 
     x = tables["fact_transactions"]
@@ -645,7 +729,8 @@ def check_referential(tables: dict):
     c = tables["dim_client"]
     unused = ~c.client_id.isin(used)
     add("dim_client", "client_id", G, "clients with no facts in any fact table", "WARN", unused.sum(), len(c),
-        examples(c.loc[unused, "client_id"], 6), "check against near-duplicate finding")
+        examples(c.loc[unused, "client_id"], 6), "check against near-duplicate finding",
+        issue_group="dim_client.near_duplicates")
     s = tables["dim_security"]
     sec_used = set(tables["fact_transactions"].security_id.str.replace(r"\.0$", "", regex=True))
     add("dim_security", "security_id", G, "securities never traded", "INFO", (~s.security_id.isin(sec_used)).sum(),
@@ -670,19 +755,20 @@ def check_cross_table(tables: dict):
 
     p = tables["fact_portfolio_snapshot"]
     n = len(p)
-    bad = p.client_id.map(cli.primary_account_type) != p.account_type
+    dim_acct = p.client_id.map(cli.primary_account_type)
+    bad = dim_acct.notna() & (dim_acct != p.account_type)      # orphans are an RI issue, not a mismatch
     add("fact_portfolio_snapshot", "account_type", G, "account_type differs from dim_client.primary_account_type",
         "WARN", bad.sum(), n, examples(p.loc[bad, "snapshot_id"]))
 
     # Benchmark should follow the client's risk profile (mapping observed in the data)
     risk = p.client_id.map(cli.risk_profile)
-    xt = pd.crosstab(risk.replace("", "<blank>"), p.benchmark_id)
+    blank_risk = risk.notna() & is_blank(risk.fillna("x"))
+    xt = pd.crosstab(risk.where(~blank_risk, "<blank>"), p.benchmark_id)
     mapping = xt.drop(index="<blank>", errors="ignore").idxmax(axis=1).to_dict()
     expected = risk.map(mapping)
     bad = expected.notna() & (expected != p.benchmark_id)
     add("fact_portfolio_snapshot", "benchmark_id", G, "benchmark inconsistent with client risk_profile", "WARN",
         bad.sum(), n, examples(p.loc[bad, "snapshot_id"]), f"observed mapping risk->benchmark: {mapping}")
-    blank_risk = risk == ""
     if blank_risk.any():
         add("dim_client", "risk_profile", G, "blank risk_profile: benchmark used in snapshots", "INFO",
             p.loc[blank_risk, "client_id"].nunique(), len(c),
@@ -691,8 +777,16 @@ def check_cross_table(tables: dict):
 
     # Snapshot AUM must equal the fee aum_basis for the same client-month
     f = tables["fact_fees"]
-    j = p.merge(f, left_on=["client_id", "snapshot_date"], right_on=["client_id", "fee_date"], how="outer",
-                indicator=True)
+    # The join assumes ONE row per client-month on each side. Blank keys are left out, and
+    # duplicate keys are reported, because they would turn mismatch counts into row-pair counts.
+    pk_cols, fk_cols = ["client_id", "snapshot_date"], ["client_id", "fee_date"]
+    p_ok = p[~is_blank(p.client_id) & ~is_blank(p.snapshot_date)]
+    f_ok = f[~is_blank(f.client_id) & ~is_blank(f.fee_date)]
+    for tbl, df_, cols in [("fact_portfolio_snapshot", p_ok, pk_cols), ("fact_fees", f_ok, fk_cols)]:
+        dups = df_.duplicated(cols).sum()
+        add(tbl, "+".join(cols), G, "client-month key not unique (snapshot<->fee join would multiply rows)", "ERROR",
+            dups, len(df_), "", "AUM reconciliation counts below are row-pairs until this is fixed")
+    j = p_ok.merge(f_ok, left_on=pk_cols, right_on=fk_cols, how="outer", indicator=True)
     both = j._merge == "both"
     mism = both & ((to_num(j.aum) - to_num(j.aum_basis)).abs() > 0.01)
     add("fact_fees", "aum_basis", G, "fee aum_basis != snapshot aum for same client-month", "ERROR", mism.sum(), len(f),
@@ -704,10 +798,15 @@ def check_cross_table(tables: dict):
         len(f), examples(j.loc[j._merge == "right_only", "fee_id"]))
 
     # Placeholder AUM shows up in BOTH tables -> same upstream default, not a coincidence
-    ph = (p.aum == "1000.0").sum(), (f.aum_basis == "1000.0").sum()
-    if ph[0]:
-        add("fact_portfolio_snapshot", "aum", G, "AUM = 1000.0 placeholder also present in fact_fees.aum_basis",
-            "WARN", ph[0], n, "1000.0", f"snapshots={ph[0]}, fees={ph[1]}; return_ytd on those rows is distorted")
+    # Compared as NUMBERS (so 1000, 1000.0 and 1000.00 all match), using the spike rule from Group 1
+    aum_num, basis_num = to_num(p.aum), to_num(f.aum_basis)
+    vc = aum_num.value_counts()
+    for val, cnt in vc[(vc >= 50) & (vc / n >= 0.002)].items():
+        in_fees = int((basis_num == val).sum())
+        if in_fees:
+            add("fact_portfolio_snapshot", "aum", G, f"repeated AUM {val:,.2f} also appears in fact_fees.aum_basis",
+                "WARN", cnt, n, val, f"snapshots={cnt}, fees={in_fees}; same upstream default in both tables — "
+                "returns and fees on these rows are distorted")
 
     # Implausible returns: >100% or near -100% YTD for a wealth-management account
     r = to_num(p.return_ytd)
@@ -746,19 +845,30 @@ def check_cross_table(tables: dict):
         add("fact_transactions", "txn_date", G, f"{'/'.join(sorted(types))} on a non-trading day", sev, m.sum(), len(x),
             examples(x.loc[m, "txn_id"]))
 
-    # Orphan client IDs in transactions: are they just above the dim_client range?
+    # Buy/Sell on market holidays that dim_date wrongly calls trading days
+    d = tables["dim_date"]
+    dd = to_date(d.date)
+    hol = set(d.loc[dd.isin(market_holidays(dd.min(), dd.max())), "date"])
+    m = x.txn_type.isin({"Buy", "Sell"}) & x.txn_date.isin(hol) & (trading == "1")
+    add("fact_transactions", "txn_date", G, "Buy/Sell on a market holiday (dim_date says trading day)", "WARN",
+        m.sum(), len(x), examples(x.loc[m, "txn_date"]))
+
+    # Orphan client IDs in transactions: inside or outside the dim_client ID range? (computed, not assumed)
     known = set(c.client_id)
-    orphan_ids = to_num(x.loc[~x.client_id.isin(known), "client_id"])
+    orphan_ids = to_num(x.loc[~x.client_id.isin(known) & ~is_blank(x.client_id), "client_id"])
     if len(orphan_ids):
-        add("fact_transactions", "client_id", G, "orphan client_ids lie outside the dim_client ID range", "INFO",
-            len(orphan_ids), len(x), f"{int(orphan_ids.min())}–{int(orphan_ids.max())}",
-            f"dim_client IDs run {to_num(c.client_id).min():.0f}–{to_num(c.client_id).max():.0f}; "
-            f"orphans have advisor_id but no client to verify against")
+        lo, hi = to_num(c.client_id).min(), to_num(c.client_id).max()
+        outside = ((orphan_ids < lo) | (orphan_ids > hi)).sum()
+        add("fact_transactions", "client_id", G, "where orphan client_ids fall vs the dim_client ID range", "INFO",
+            len(orphan_ids), len(x), f"orphans {orphan_ids.min():.0f}–{orphan_ids.max():.0f}",
+            f"dim_client IDs run {lo:.0f}–{hi:.0f}; {outside} of {len(orphan_ids)} orphan rows fall outside that range")
 
     # Inactive clients still generating facts in the final month
-    last = p.snapshot_date.max()
+    sd = to_date(p.snapshot_date)
+    last = sd.max()
     inactive = set(c.loc[c.is_active == "False", "client_id"])
-    m = (p.snapshot_date == last) & p.client_id.isin(inactive)
+    m = (sd == last) & p.client_id.isin(inactive)
+    last = last.strftime("%Y-%m-%d")
     add("fact_portfolio_snapshot", "client_id", G, f"inactive clients with a snapshot in the last month ({last})",
         "WARN", m.sum(), n, examples(p.loc[m, "client_id"]))
 
@@ -796,9 +906,11 @@ def main():
     # Console summary
     print("\n=== Findings by severity and group ===")
     print(pd.crosstab(dq.check_group, dq.severity).reindex(columns=["ERROR", "WARN", "INFO"], fill_value=0))
+    print(f"\n{len(dq)} findings in {dq.issue_group.nunique()} issue groups. rows_affected is per finding;"
+          f" findings in the same issue_group overlap, so do not add them up.")
     print("\n=== ERROR and WARN findings ===")
     with pd.option_context("display.max_rows", 200, "display.width", 200, "display.max_colwidth", 70):
-        print(dq[dq.severity != "INFO"][["severity", "table", "column", "check", "rows_affected"]].to_string(index=False))
+        print(dq[dq.severity != "INFO"][["severity", "issue_group", "check", "rows_affected"]].to_string(index=False))
     print(f"\nSaved {args.out_dir / 'profile_raw.csv'} ({len(profile)} rows)")
     print(f"Saved {args.out_dir / 'dq_summary_raw.csv'} ({len(dq)} findings)")
 
