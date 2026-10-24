@@ -210,7 +210,7 @@
 | Field | Entry |
 |---|---|
 | **Table / column** | `fact_portfolio_snapshot.return_ytd`, `active_alpha_ytd` |
-| **Evidence** | 976 rows above +100% YTD (max 94.67 = 9,467%); 497 below −90%; 459 alphas outside ±2 (458 are the same rows as the >100% returns). 476 of the 497 near-total losses and about half of the >100% rows belong to the 92 placeholder clients from D17; 249 are on placeholder rows themselves. The alpha identity still holds on all of them. |
+| **Evidence** | 976 rows above +100% YTD (max 94.67 = 9,467%); 497 below −90%; 459 alphas outside ±2 (458 are the same rows as the >100% returns). 475 of the 497 near-total losses and about half of the >100% rows belong to the 92 placeholder clients from D17; 249 are on placeholder rows themselves. The alpha identity still holds on all of them. |
 | **Dimension violated** | Accuracy / Plausibility |
 | **Decision** | **Flag**: add `flag_return_implausible` (return > 1 or < −0.9). Leave values. |
 | **Justification** | Returns can't be recomputed without daily cash flows, and the values are internally consistent; most are a side effect of measuring growth from a $1,000 placeholder base. |
