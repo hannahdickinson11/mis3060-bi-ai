@@ -1,6 +1,6 @@
 # HW4 Decision Log — Wildcat Capital Data Cleaning
 
-> 
+> **DRAFT — review every decision before writing `02_clean.py`.** Delete this line when final.
 >
 > Evidence comes from `reports/dq_summary_raw.csv` (65 findings in 41 issue groups, run 2026-10-19) plus targeted checks against the raw files. Findings that describe the same rows (same `issue_group`) are logged once.
 
