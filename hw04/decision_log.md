@@ -1,7 +1,5 @@
 # HW4 Decision Log — Wildcat Capital Data Cleaning
 
->
->
 > Evidence comes from `reports/dq_summary_raw.csv` (65 findings in 41 issue groups, run 2026-10-19) plus targeted checks against the raw files. Findings that describe the same rows (same `issue_group`) are logged once.
 
 ## Summary
@@ -11,21 +9,21 @@
 | D01 | all raw files (names) | standardize | 3 files |
 | D02 | dim_client.state | standardize | 78 |
 | D03 | dim_client (IDs 2501–2525) | quarantine | 25 |
-| D04 | dim_client.risk_profile | flag (leave blank) | 76 |
+| D04 | dim_client.risk_profile | flag (leave blank) | 76 (75 after D03) |
 | D05 | dim_client.client_since | leave as is | 1,549 |
 | D06 | dim_advisor.certifications | leave as is | 6 |
 | D07 | dim_security.sector / expense_ratio_bps | leave as is | 219 / 281 |
 | D08 | dim_security.name | leave as is | 3 pairs |
 | D09 | dim_date.is_trading_day | standardize (correct) | 47 |
 | D10 | fact_transactions.security_id | standardize | 197,175 |
-| D11 | fact_transactions.security_id / shares / price (blanks) | leave as is | 101,597 |
-| D12 | fact_transactions.shares | convert (sign) | 836 |
+| D11 | fact_transactions.security_id / shares / price (blanks) | leave as is | 101,597 (101,528 after D13) |
+| D12 | fact_transactions.shares | convert (sign) | 836 (835 after D13) |
 | D13 | fact_transactions.client_id | quarantine | 200 |
-| D14 | fact_transactions.txn_date | flag | 44,262 |
+| D14 | fact_transactions.txn_date | flag | 44,262 (44,241 after D13) |
 | D15 | fact_portfolio_snapshot.return_ytd (% text) | convert | 300 |
 | D16 | return_ytd / active_alpha_ytd (scientific notation) | leave as is | 891 values |
 | D17 | snapshot.aum + fees.aum_basis = 1000.0 | flag | 420 / 386 |
-| D18 | snapshot.return_ytd / active_alpha_ytd (extreme) | flag | 976 + 497 |
+| D18 | snapshot.return_ytd (extreme) | flag | 976 + 497 (1,475 after D15) |
 | D19 | fact_fees.bps_charged | leave as is | 1 |
 | D20 | snapshots with no fee row | leave as is | 7,350 |
 | D21 | snapshot dated before client_since | leave as is | 930 |
@@ -50,7 +48,7 @@
 | **Table / column** | `dim_client.state` |
 | **Evidence** | 78 of 2,525 rows (3.1%) use full names instead of the 2-letter code: Pennsylvania 25, Florida 15, New York 14, New Jersey 13, California 5, Illinois 4, Texas 2. Shapes: `A` 96.9%, `Aa` 2.0%, `Aa Aa` 1.1%. |
 | **Dimension violated** | Validity, Consistency |
-| **Decision** | **Standardize** to USPS codes with a fixed 7-name lookup |
+| **Decision** | **Standardize** to USPS codes with a full 51-entry state name → code lookup (7 of the names occur in this data) |
 | **Justification** | "PA" and "Pennsylvania" are the same state but would show as two bars in any by-state chart, understating PA (the largest state, 414 + 25 clients). |
 | **Risk** | Very low — each name maps to exactly one code. A misspelled name not in the lookup would stay unfixed; the script will `assert` 0 values outside the allowed list after the fix. |
 
@@ -58,11 +56,11 @@
 | Field | Entry |
 |---|---|
 | **Table / column** | `dim_client` rows with `client_id` 2501–2525 |
-| **Evidence** | 25 rows match an existing client (IDs 1–2500) on first name, age, city, zip, initial AUM — and also on state, risk profile, tier, account type, client_since, advisor and is_active (12 of 12 fields, all 25 pairs). Only differences: a new ID and a truncated last name (`Taylo` vs `Taylor`, `Jacobso` vs `Jacobson`). None of the 25 appear in any fact table; all 25 originals do. |
+| **Evidence** | 25 rows match an existing client (IDs 1–2500) on first name, age, city, zip, initial AUM — and also on state, risk profile, tier, account type, client_since, advisor and is_active (12 of 12 fields, all 25 pairs). Only differences: a new ID and a last name that differs at the end — 23 shortened (`Taylo` vs `Taylor`, `Jacobso` vs `Jacobson`) and 2 with an extra letter (`Leen` vs `Lee`, `Pacen` vs `Pace`). None of the 25 appear in any fact table; all 25 originals do. |
 | **Dimension violated** | Uniqueness |
 | **Decision** | **Quarantine** the 25 duplicate rows to `quarantine_dim_client_duplicates.csv` (with the matched original's ID). Keep the originals. |
 | **Justification** | One person counted twice inflates client counts and onboarded AUM (the duplicates carry $49.1M of initial AUM). Because no fact rows point to them, removing them orphans nothing. |
-| **Risk** | If any were genuinely different people, they'd be dropped — very unlikely with 12 identical fields and zero activity. Verify after: 2,500 clients = distinct client_ids in fees and snapshots. |
+| **Risk** | If any were genuinely different people, they'd be dropped — very unlikely with 12 identical fields and zero activity. The script asserts that the kept originals all have fact rows and that the 2,500 kept clients = the distinct client_ids in fees and snapshots. |
 
 ### D04 — dim_client.risk_profile: blanks
 | Field | Entry |
@@ -134,7 +132,7 @@
 | **Dimension violated** | Validity, Referential Integrity |
 | **Decision** | **Standardize**: remove the trailing `.0` to make whole-number text |
 | **Justification** | Without this, no trade or dividend joins to a security, so nothing can be reported by asset class, sector or benchmark. |
-| **Risk** | If any ID had a real decimal part (e.g. `45.5`), stripping would mis-map it — none do; the script will `assert` every value matches `^\d+\.0$` before converting. |
+| **Risk** | If any ID had a real decimal part (e.g. `45.5`), stripping would mis-map it — none do; the script asserts every non-blank value is a whole number (written `45` or `45.0`) before converting, and changes only the `45.0` ones. |
 
 ### D11 — fact_transactions: blank security/shares/price on cash movements
 | Field | Entry |
@@ -209,10 +207,10 @@
 ### D18 — Extreme YTD returns
 | Field | Entry |
 |---|---|
-| **Table / column** | `fact_portfolio_snapshot.return_ytd`, `active_alpha_ytd` |
+| **Table / column** | `fact_portfolio_snapshot.return_ytd` (the flag rule); `active_alpha_ytd` checked only |
 | **Evidence** | 976 rows above +100% YTD (max 94.67 = 9,467%); 497 below −90%; 459 alphas outside ±2 (458 are the same rows as the >100% returns). 475 of the 497 near-total losses and about half of the >100% rows belong to the 92 placeholder clients from D17; 249 are on placeholder rows themselves. The alpha identity still holds on all of them. |
 | **Dimension violated** | Accuracy / Plausibility |
-| **Decision** | **Flag**: add `flag_return_implausible` (return > 1 or < −0.9). Leave values. |
+| **Decision** | **Flag**: add `flag_return_implausible` (return > 1 or < −0.9). Leave values. Alpha is not part of the rule; the script asserts that no extreme alpha is left unflagged. |
 | **Justification** | Returns can't be recomputed without daily cash flows, and the values are internally consistent; most are a side effect of measuring growth from a $1,000 placeholder base. |
 | **Risk** | A single 9,467% row distorts any average return — use median or exclude flagged rows in committee reporting. |
 
@@ -256,6 +254,19 @@
 - One fee and one snapshot per client-month (no duplicates); no exact duplicate rows in any table.
 - 11 of 13 relationships match 100% in the raw data, including all 3 fact date columns to `dim_date`. The other 2 are D10 and D13.
 - Client tier agrees with initial AUM on every row.
+
+## Counts after applying the cleaning order (from `02_clean.py`)
+The evidence above was measured on the raw data. Quarantining first (D03, D13) and converting D15 before flagging changes a few counts. Every number below comes from `data/audit/cleaning_log.csv`.
+
+| Decision | Raw evidence | After cleaning | Why it differs |
+|---|---:|---:|---|
+| D04 blank risk profiles | 76 | 75 | 1 blank-risk client was a D03 duplicate |
+| D11 cash rows with no security | 101,597 | 101,528 | 69 cash rows belonged to D13 orphan clients |
+| D12 negative shares fixed | 836 | 835 | 1 negative-share row belonged to a D13 orphan client |
+| D14 Buy/Sell on non-trading days | 44,262 | 44,241 | 21 Buy/Sell rows belonged to D13 orphan clients |
+| D18 implausible returns | 976 + 497 | 1,475 | 2 of the D15 percent values converted to extreme returns |
+
+Quarantine files keep the **original raw rows**, so format fixes made before a row was quarantined (131 transaction cells, 1 client state) are not in `value_changes.csv`.
 
 ## Proposed cleaning order (for Part C)
 1. D01 file names → 2. type/format fixes (D10, D15, D02) → 3. D03 quarantine duplicates → 4. D13 quarantine orphans (needs the cleaned client list) → 5. D12 sign fix → 6. D09 calendar → 7. flags (D04, D14, D17, D18) → 8. final asserts: raw rows = clean + quarantined, every relationship 100%.

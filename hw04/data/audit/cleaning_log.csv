@@ -1,0 +1,24 @@
+decision,table,issue,action,rows_affected,note
+D01,all,raw file names carry ' (2)' suffix,standardize,3,clean output uses plain table names
+D10,fact_transactions,security_id stored as float text ('45.0'),standardize,197175,"stripped '.0'; orphans 197,175 -> 0"
+D15,fact_portfolio_snapshot,return_ytd stored as percent text,convert,300,divided by 100; 300 of 300 written values reconcile to benchmark + alpha
+D02,dim_client,state spelled out instead of 2-letter code,standardize,78,"mapped with a 51-entry state name->code lookup: {'Pennsylvania': 25, 'Florida': 15, 'New York': 14, 'New Jersey': 13, 'California': 5, 'Illinois': 4, 'Texas': 2}"
+D03,dim_client,duplicate clients (last name shortened or mistyped at the end),quarantine,25,"23 shortened + 2 extra letter; kept the original (lower ID, has fact rows); 2,500 clients = distinct clients in fees + snapshots"
+D13,fact_transactions,client_id with no matching client,quarantine,200,"200 distinct IDs, $10,888,495.37 total amount kept in quarantine"
+D12,fact_transactions,negative shares on Buy rows,convert,835,absolute value; every row reconciled to amount before the change; all trades reconcile after
+D09,dim_date,market holidays marked as trading days,standardize,47,set to 0 using NYSE full-day closures 2020–2024 (list in script)
+D04,dim_client,risk_profile blank,flag,75,left blank (compliance record); snapshots suggest Balanced (benchmark 3) — see decision log
+D14,fact_transactions,Buy/Sell dated on a weekend or market holiday,flag,44241,40630 weekend + 3611 holiday; dates not moved
+D17,fact_portfolio_snapshot,AUM = 1000.0 placeholder,flag,420,92 clients; 34 have no fee row; not interpolated
+D17,fact_fees,aum_basis = 1000.0 placeholder,flag,386,386 of 386 match a flagged snapshot month
+D18,fact_portfolio_snapshot,YTD return > +100% or < -90%,flag,1475,2 of these were percent text converted in D15; alpha not used in the rule (0 extreme alphas unflagged)
+D05,dim_client,client_since before dim_date coverage,leave as is,1532,"attribute, not a date FK — do not relate to dim_date"
+D06,dim_advisor,certifications = 'None',leave as is,6,'None' means no certification; read with keep_default_na=False
+D07,dim_security,sector blank on ETFs / expense ratio blank on stocks,leave as is,500,"verified 1:1 with is_etf (219 ETFs, 281 stocks)"
+D08,dim_security,repeated security names,leave as is,6,"different tickers/IDs (tickers verified unique) — use ticker, not name"
+D11,fact_transactions,security/shares/price blank on cash movements,leave as is,101528,verified: blank in all three on every cash row and on no trade/dividend row
+D16,fact_portfolio_snapshot,scientific notation in return columns,leave as is,891,valid numbers
+D19,fact_fees,bps_charged above 100,leave as is,1,fee_id 68809; within client's range; amount reconciles
+D20,fact_portfolio_snapshot,snapshot month with no fee row,leave as is,7350,fees not invented; documented as limitation
+D21,fact_portfolio_snapshot,snapshot on the 1st of the joining month,leave as is,930,monthly grain; 0 snapshots in an earlier month
+--,all,format fixes on rows later quarantined,not logged in value_changes,132,"quarantine files hold the original raw rows: {'dim_client': 1, 'fact_transactions': 131}"
