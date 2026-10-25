@@ -366,12 +366,12 @@ def d09_trading_days(t):
     hol = pd.to_datetime(pd.Series(NYSE_HOLIDAYS))
     covered = set(hol.dt.year)
     assert set(dt.dt.year) <= covered, f"dim_date has years {sorted(set(dt.dt.year) - covered)} with no holiday list"
-    assert hol.isin(dt).all() and (hol.dt.dayofweek < 5).all(), "holiday list must be weekdays inside dim_date"
+    assert hol.isin(dt).all() and (hol.dt.day_of_week < 5).all(), "holiday list must be weekdays inside dim_date"
     is_hol = d.date.isin(set(NYSE_HOLIDAYS))
     trading_before = (d.is_trading_day == "1").sum()
     n = change("dim_date", d, is_hol & (d.is_trading_day == "1"), "is_trading_day", "0")
     changed_dates = set(VALUE_CHANGES[-1]["key"].map(d.set_index("date_id").date))
-    weekday = dt.dt.dayofweek < 5
+    weekday = dt.dt.day_of_week < 5
     show(f"{n} holidays marked as trading days; {trading_before:,} trading days",
          f"{(is_hol & (d.is_trading_day == '1')).sum()} holidays marked trading; "
          f"{(d.is_trading_day == '1').sum():,} trading days", n)
@@ -409,7 +409,7 @@ def flags(t):
     trade = x.txn_type.isin(TRADE_TYPES)
     m = trade & (trading == "0")
     add_flag(x, "flag_non_trading_day", m)
-    dow = pd.to_datetime(x.txn_date, format="%Y-%m-%d").dt.dayofweek
+    dow = pd.to_datetime(x.txn_date, format="%Y-%m-%d").dt.day_of_week
     weekend, holiday = trade & (dow >= 5), trade & (dow < 5) & x.txn_date.isin(set(NYSE_HOLIDAYS))
     show(f"{trade.sum():,} Buy/Sell rows", f"flag = 1 on {m.sum():,} ({weekend.sum():,} weekend + "
          f"{holiday.sum():,} holiday); dates unchanged", m.sum())

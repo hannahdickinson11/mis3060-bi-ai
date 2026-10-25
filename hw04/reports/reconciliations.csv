@@ -1,0 +1,19 @@
+stage,reconciliation,scope,tables,compared,rows_compared,rows_matched,match_pct,rows_not_matched,note
+raw,R1 fee AUM basis = snapshot AUM,cross-table,fact_fees x fact_portfolio_snapshot,every fee row vs the single snapshot for that client-month (tol $0.01),122197,122197,100.0,0,"0 fees with no unique snapshot; 0 snapshot rows share a client-month. Both tables carry the D17 placeholder, so this check confirms consistency, not correctness"
+raw,"R2 fee amount = aum_basis x bps / 10,000 / 12",within-table,fact_fees,recomputed vs stored amount (tol $0.05),122197,122197,100.0,0,annual rate billed monthly
+raw,R3 trade amount = shares x price,within-table,fact_transactions,recomputed vs stored amount (tol $1),197175,196339,99.576,836,a negative share count fails this check
+raw,R4 return = benchmark + alpha,within-table,fact_portfolio_snapshot,return_ytd vs benchmark + alpha (tol 0.0001),129547,129247,99.7684,300,percent-text returns ('9.28%') fail in raw because they don't parse
+raw,R5 one benchmark return per benchmark-month,within-table,fact_portfolio_snapshot,distinct benchmark_return_ytd per benchmark-month,180,180,100.0,0,180 benchmark-months
+raw,R6 fact_fees.advisor_id = dim_client.advisor_id,cross-table,fact_fees x dim_client,advisor on fact vs client's advisor,122197,122197,100.0,0,0 rows whose client is not (uniquely) in dim_client are excluded — see RI
+raw,R6 fact_portfolio_snapshot.advisor_id = dim_client.advisor_id,cross-table,fact_portfolio_snapshot x dim_client,advisor on fact vs client's advisor,129547,129547,100.0,0,0 rows whose client is not (uniquely) in dim_client are excluded — see RI
+raw,R6 fact_transactions.advisor_id = dim_client.advisor_id,cross-table,fact_transactions x dim_client,advisor on fact vs client's advisor,298572,298572,100.0,0,200 rows whose client is not (uniquely) in dim_client are excluded — see RI
+raw,R7 snapshot account_type = dim_client.primary_account_type,cross-table,fact_portfolio_snapshot x dim_client,account type,129547,129547,100.0,0,
+clean,R1 fee AUM basis = snapshot AUM,cross-table,fact_fees x fact_portfolio_snapshot,every fee row vs the single snapshot for that client-month (tol $0.01),122197,122197,100.0,0,"0 fees with no unique snapshot; 0 snapshot rows share a client-month. Both tables carry the D17 placeholder, so this check confirms consistency, not correctness"
+clean,"R2 fee amount = aum_basis x bps / 10,000 / 12",within-table,fact_fees,recomputed vs stored amount (tol $0.05),122197,122197,100.0,0,annual rate billed monthly
+clean,R3 trade amount = shares x price,within-table,fact_transactions,recomputed vs stored amount (tol $1),197044,197044,100.0,0,a negative share count fails this check
+clean,R4 return = benchmark + alpha,within-table,fact_portfolio_snapshot,return_ytd vs benchmark + alpha (tol 0.0001),129547,129547,100.0,0,percent-text returns ('9.28%') fail in raw because they don't parse
+clean,R5 one benchmark return per benchmark-month,within-table,fact_portfolio_snapshot,distinct benchmark_return_ytd per benchmark-month,180,180,100.0,0,180 benchmark-months
+clean,R6 fact_fees.advisor_id = dim_client.advisor_id,cross-table,fact_fees x dim_client,advisor on fact vs client's advisor,122197,122197,100.0,0,0 rows whose client is not (uniquely) in dim_client are excluded — see RI
+clean,R6 fact_portfolio_snapshot.advisor_id = dim_client.advisor_id,cross-table,fact_portfolio_snapshot x dim_client,advisor on fact vs client's advisor,129547,129547,100.0,0,0 rows whose client is not (uniquely) in dim_client are excluded — see RI
+clean,R6 fact_transactions.advisor_id = dim_client.advisor_id,cross-table,fact_transactions x dim_client,advisor on fact vs client's advisor,298572,298572,100.0,0,0 rows whose client is not (uniquely) in dim_client are excluded — see RI
+clean,R7 snapshot account_type = dim_client.primary_account_type,cross-table,fact_portfolio_snapshot x dim_client,account type,129547,129547,100.0,0,

@@ -597,7 +597,7 @@ def check_single_table(tables: dict):
         "is_month_end": int_text(dt.dt.is_month_end) != d.is_month_end,
         "is_quarter_end": int_text(dt.dt.is_quarter_end) != d.is_quarter_end,
         "is_year_end": int_text(dt.dt.is_year_end) != d.is_year_end,
-        "is_trading_day(weekend)": (dt.dt.dayofweek >= 5) & (d.is_trading_day == "1"),
+        "is_trading_day(weekend)": (dt.dt.day_of_week >= 5) & (d.is_trading_day == "1"),
     }
     for col, bad in checks.items():
         bad = ok & bad
@@ -607,7 +607,7 @@ def check_single_table(tables: dict):
     # Trading-day flag, both directions: market holidays (NYSE rules, approximated) vs weekdays
     hol = market_holidays(dt.min(), dt.max())
     is_hol = dt.isin(hol)
-    weekday = ok & (dt.dt.dayofweek < 5)
+    weekday = ok & (dt.dt.day_of_week < 5)
     bad = is_hol & (d.is_trading_day == "1")
     add("dim_date", "is_trading_day", G, "market holiday marked as a trading day", "WARN", bad.sum(), len(d),
         examples(d.loc[bad, "date"], 5), "approximate NYSE calendar (New Year, MLK, Presidents, Good Friday, Memorial, "
