@@ -55,4 +55,4 @@ Clean `fact_transactions` (85.18%), `fact_portfolio_snapshot` (98.73%) and `fact
 - The trading calendar covers NYSE full-day holidays only; one-off market closures are not modelled.
 
 ---
-`AI-assisted report — reviewed for factual accuracy on 10/24/2026 by Hannah Dickinson`
+`AI-assisted report — reviewed for factual accuracy on 10/25/2026 by Hannah Dickinson`
