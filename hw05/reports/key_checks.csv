@@ -1,0 +1,41 @@
+part,check,table,column,result,detail
+D,row_col_count,dim_advisor,*,PASS,25 rows x 7 columns (brief says 25 x 7)
+D,row_col_count,dim_benchmark,*,PASS,8 rows x 4 columns (brief says 8 x 4)
+D,row_col_count,dim_client,*,PASS,"2,500 rows x 14 columns (brief says 2,500 x 14)"
+D,row_col_count,dim_date,*,PASS,"1,827 rows x 12 columns (brief says 1,827 x 12)"
+D,row_col_count,dim_security,*,PASS,500 rows x 8 columns (brief says 500 x 8)
+D,row_col_count,fact_fees,*,PASS,"122,197 rows x 8 columns (brief says 122,197 x 8)"
+D,row_col_count,fact_portfolio_snapshot,*,PASS,"129,547 rows x 14 columns (brief says 129,547 x 14)"
+D,row_col_count,fact_transactions,*,PASS,"298,572 rows x 10 columns (brief says 298,572 x 10)"
+A,pk_unique_not_blank,dim_advisor,advisor_id,PASS,"25 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,dim_benchmark,benchmark_id,PASS,"8 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,dim_client,client_id,PASS,"2,500 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,dim_date,date_id,PASS,"1,827 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,dim_security,security_id,PASS,"500 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,fact_fees,fee_id,PASS,"122,197 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,fact_portfolio_snapshot,snapshot_id,PASS,"129,547 distinct values, 0 duplicates, 0 blanks"
+A,pk_unique_not_blank,fact_transactions,txn_id,PASS,"298,572 distinct values, 0 duplicates, 0 blanks"
+A,date_join_unique,dim_date,date,PASS,"1,827 distinct dates, 2020-01-01 to 2024-12-31"
+A,fk_integrity,dim_client,advisor_id,PASS,"-> dim_advisor[advisor_id]: 2,500 matched, 0 orphans, 0 blanks"
+A,fk_integrity,dim_security,benchmark_id,PASS,"-> dim_benchmark[benchmark_id]: 500 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_fees,client_id,PASS,"-> dim_client[client_id]: 122,197 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_fees,advisor_id,PASS,"-> dim_advisor[advisor_id]: 122,197 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_fees,fee_date,PASS,"-> dim_date[date]: 122,197 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_portfolio_snapshot,client_id,PASS,"-> dim_client[client_id]: 129,547 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_portfolio_snapshot,advisor_id,PASS,"-> dim_advisor[advisor_id]: 129,547 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_portfolio_snapshot,benchmark_id,PASS,"-> dim_benchmark[benchmark_id]: 129,547 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_portfolio_snapshot,snapshot_date,PASS,"-> dim_date[date]: 129,547 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_transactions,client_id,PASS,"-> dim_client[client_id]: 298,572 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_transactions,advisor_id,PASS,"-> dim_advisor[advisor_id]: 298,572 matched, 0 orphans, 0 blanks"
+A,fk_integrity,fact_transactions,security_id,PASS,"-> dim_security[security_id]: 197,044 matched, 0 orphans, 101,528 blanks (allowed)"
+A,fk_integrity,fact_transactions,txn_date,PASS,"-> dim_date[date]: 298,572 matched, 0 orphans, 0 blanks"
+A,blank_fk_explained,fact_transactions,security_id,PASS,"blank on 101,528 rows, all cash types: {'Deposit': 35956, 'Advisory Fee': 35742, 'Withdrawal': 29830}; 0 non-cash rows blank, 0 cash rows with a security"
+B,grain_unique,fact_fees,client_id + fee_date,PASS,"0 duplicate rows on (client_id, fee_date)"
+B,grain_unique,fact_portfolio_snapshot,client_id + snapshot_date,PASS,"0 duplicate rows on (client_id, snapshot_date)"
+B,grain_unique,fact_transactions,txn_id,PASS,0 duplicate rows on (txn_id)
+B,monthly_date,fact_fees,fee_date,PASS,0 dates unreadable or not on the 1st of the month
+B,monthly_date,fact_portfolio_snapshot,snapshot_date,PASS,0 dates unreadable or not on the 1st of the month
+B,no_natural_key,fact_transactions,client_id + txn_date + txn_type + security_id,INFO,"622 rows repeat (client_id, txn_date, txn_type, security_id), so only txn_id identifies a transaction"
+E,advisor_paths_agree,fact_fees,advisor_id,PASS,0 rows where it differs from dim_client[advisor_id]
+E,advisor_paths_agree,fact_portfolio_snapshot,advisor_id,PASS,0 rows where it differs from dim_client[advisor_id]
+E,advisor_paths_agree,fact_transactions,advisor_id,PASS,0 rows where it differs from dim_client[advisor_id]
