@@ -57,6 +57,8 @@ Built in Power BI Desktop on the Apporto virtual desktop, following `00_Project 
 
 Claude (desktop app) drafted the script; I ran it in VS Code; Claude Code in VS Code reviewed it before I committed, using a "don't edit any files, just list what you find" prompt. I applied the fixes and re-ran the script before committing.
 
+Claude also helped draft `star_design.md` (Parts A, B, C, E and F) and this README from the script's results and my Power BI model. I reviewed and edited every section, and asked for Part E (c), (d) and Part F to be rewritten in plainer language. I built the Power BI model myself on Apporto (loading, column types, relationships, date table and row-count cards), with Claude guiding the steps and checking my screenshots.
+
 ## What Claude Code flagged and what I did (`scripts/01_check_keys.py`)
 
 Claude Code found no correctness bugs. It checked the script's assumptions against the data read-only (row and column counts, grain, advisor agreement, date formats) and confirmed they hold.
