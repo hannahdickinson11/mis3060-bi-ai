@@ -99,31 +99,21 @@ The choice doesn't change any numbers today: on every row of all three facts, th
 
 ### (c) The date dimension has its own `date_id`, but the facts store calendar dates. Which column did I join on, and why?
 
-I joined `txn_date`, `fee_date` and `snapshot_date` to **`dim_date[date]`**. The facts hold calendar dates (`2020-01-01`); `date_id` is a row number (1 to 1,827) that never appears in any fact, so joining on it would match nothing. `dim_date[date]` is unique, has no gaps from 2020-01-01 to 2024-12-31, and covers every fact date (0 orphans in the script). Both sides are typed **Date** (not Date/Time), so the values match exactly. Using `date_id` would have required adding a new key column to each fact, which the brief does not allow. I also marked `dim_date` as the date table on `date`, which time-intelligence DAX in Assignment 6 needs.
+I joined the three fact date columns (`txn_date`, `fee_date`, `snapshot_date`) to `dim_date[date]`, not `date_id`. The facts store actual calendar dates like 2020-01-01, while `date_id` is just a row number (1 to 1,827) that never appears in any fact table, so joining on it would match nothing. `dim_date[date]` has one row per day from 2020 to 2024 and covers every fact date, and both sides are set to the Date type so the values match exactly. I also marked `dim_date` as the date table on this column.
 
 ### (d) Star or snowflake: does anything connect one dimension to another? Did I keep it?
 
-Yes, two dimension-to-dimension links:
-
-- **`dim_client` → `dim_advisor`:** kept, but **inactive**, because the facts already reach `dim_advisor` directly (see b). It is in the model to document the relationship and can be switched on with `USERELATIONSHIP` in a DAX measure if needed.
-- **`dim_security` → `dim_benchmark`:** kept **active**. This makes the model a **star with one snowflake branch**: transactions reach `dim_benchmark` through `dim_security`. It creates no ambiguity, because the transactions have no benchmark of their own, so there is only one path.
-
-`dim_benchmark` therefore means two different things depending on the fact. For a snapshot, it is the **portfolio's** benchmark (only benchmarks 1, 3 and 8 are used). For a transaction, it is the **security's** benchmark. A benchmark slicer filters both, so a report mixing the two facts should say which meaning it uses.
+There are two links between dimensions: `dim_client` → `dim_advisor` and `dim_security` → `dim_benchmark`. I kept both. The client → advisor link is inactive, because the facts already connect to `dim_advisor` directly (see b). The security → benchmark link is active, which makes the model a star with one small snowflake branch: transactions reach `dim_benchmark` through `dim_security`. That causes no conflict, because transactions have no benchmark of their own. One thing to watch is that `dim_benchmark` means the portfolio's benchmark for snapshots but the security's benchmark for transactions, so a benchmark filter should be read with that in mind.
 
 ## Part F — Reflection
 
-### 1. Fees: "Which advisors brought in the most fee revenue in 2024?"
-**One visual, no DAX.** A bar chart with `dim_advisor[last_name]` on the axis, `fact_fees[amount]` as the value (Sum) and a `dim_date[year]` = 2024 filter answers it. `amount` is additive across advisors, clients and months, and `fact_fees` joins to both `dim_advisor` and `dim_date`, so the default Sum is the right total.
+**1. Fees: "Which advisors brought in the most fee revenue in 2024?"**
+This works in one visual with no DAX: a bar chart of fee `amount` by advisor, filtered to 2024. Fee amounts can be added across advisors, clients and months, so Power BI's default Sum gives the right answer.
 
-### 2. Portfolio snapshot: "How much does each advisor manage (AUM) at the end of 2024?"
-**Not in one visual without a workaround.** `aum` is semi-additive. If I put `aum` by advisor in a visual filtered to 2024, Power BI sums all twelve monthly snapshots: firm-wide that is about $135.5 bn, while the real December 2024 AUM is about $12.7 bn, roughly 11 times too high. A plain visual only works if I also filter to the last month (`dim_date[month]` = 12), and that breaks as soon as someone changes the year slicer. The proper fix is a DAX measure that takes the last snapshot in the period (Assignment 6).
+**2. Portfolio snapshot: "How much money does each advisor manage at the end of 2024?"**
+This does not work in one simple visual. AUM is a month-start balance, so a 2024 filter makes Power BI add up all twelve monthly balances: about $135.5 bn for the firm, when the real December 2024 total is about $12.7 bn. I would have to filter to December by hand or write a DAX measure that picks the latest month. To fix it in the schema, I would add a flag to the snapshot table that marks the last snapshot of each month, quarter and year, so a simple filter gives the right balance. The existing `is_month_end` flag in `dim_date` doesn't help, because snapshots are dated the 1st of the month.
 
-**Schema change that would fix it:** snapshots are dated the **1st** of each month, so `dim_date[is_month_end]` can't be used to pick the period-end balance. I would add a period-end flag to `fact_portfolio_snapshot` (for example `is_latest_in_month`, `is_quarter_end_snapshot`, `is_year_end_snapshot`), or date each snapshot at month end so the existing `dim_date` flags line up. Then a filter on the flag gives the right balance without DAX.
+**3. Transactions: "How much new money came in (deposits minus withdrawals) each quarter?"**
+This also needs DAX. Every transaction amount is stored as a positive number and the direction is only in `txn_type`, so adding up `amount` mixes money coming in with money going out. In 2024 all transactions add up to about $3.65 bn, but deposits minus withdrawals is only about $77.5 m. To fix it, I would store withdrawals as negative amounts (or add a +1 / −1 direction column), so a plain Sum gives net flow.
 
-### 3. Transactions: "What was net new money (deposits minus withdrawals) by quarter?"
-**Not in one visual without DAX.** Every `amount` is positive and the direction is only in `txn_type`. Summing `amount` mixes inflows and outflows (in 2024, all transactions add up to about $3.65 bn, while deposits minus withdrawals is about $77.5 m). One visual can show deposits and withdrawals side by side, but subtracting them needs a DAX measure.
-
-**Schema change that would fix it:** store a signed amount (or a `flow_direction` of +1 / −1) on `fact_transactions`, so deposits are positive and withdrawals negative, and a plain Sum gives net flow. A small `dim_txn_type` table (type, direction, is_cash) would also make the cash rows easier to separate from trades than the blank `security_id`.
-
-### What the model can and cannot answer
-The model answers additive questions well: fees by advisor, client, fee type or month, and transaction counts and amounts within one type. Balances (`aum`, `aum_basis`) and rates (`return_ytd`, `cash_pct`, `bps_charged`) need DAX, because summing them gives a wrong number. Two questions the schema can't answer at all: performance credited to an advisor **at the time** (the facts carry only the client's current advisor, even on the 2,410 post-departure transactions) and holdings by security (there is no positions table, only trades).
+**Overall:** the model handles amounts that can simply be added, like fees and transaction totals. Balances like AUM and rates like returns need extra work, because adding them gives the wrong number. Two things the data can't answer at all: which advisor a client had at the time of a transaction (the facts only store the current advisor), and what each client holds in each security (there is no holdings table, only trades).
