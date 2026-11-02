@@ -51,6 +51,7 @@ Built in Power BI Desktop on the Apporto virtual desktop, following `00_Project 
 - **Relationships:** 13 total, all many-to-one with single cross-filter direction. 12 are active; `dim_client[advisor_id]` → `dim_advisor` is inactive because each fact already joins to `dim_advisor` directly. The fact dates join to `dim_date[date]`, not `date_id`. Full list and reasons in `star_design.md`, Part E.
 - **Date table:** `dim_date` is marked as the date table on `date`.
 - **Row counts:** one Count card per table's primary key shows 25, 8, 2,500, 1,827, 500, 122,197, 129,547 and 298,572, matching the brief (`powerbi/row_counts.png`).
+- **Summarization:** keys (`*_id`), the 0/1 flags (`is_*`), the date parts (`year`, `quarter`, `month`, `week_of_year`) and the dimension attributes from Part C that should never be summed (`age`, `initial_aum`, `years_experience`, `aum_target_mm`, `expense_ratio_bps`) are set to **Don't summarize**, so Power BI never adds them up by default. This matches the non-measure list in `star_design.md`, Part C.
 - No DAX measures were written, as the brief asks. `hw05.pbix` is about 21 MB, under GitHub's 100 MB limit.
 
 ## Workflow
