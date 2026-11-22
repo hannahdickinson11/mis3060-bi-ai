@@ -95,7 +95,7 @@ The ID is included so two clients with the same name don't collapse into one row
 | P2-7 | Categorical (client) + several measures | 2 | Ranking / lookup | A table is right when the reader needs exact values for named clients. Data bars show the ranking; an icon flags any client whose AUM fell. |
 
 **Principles applied across both pages**
-- **One accent.** The report uses the class Wildcat theme (ICE 12). Net Flows (the part the firm can influence) is the accent blue `#118DFF` in the bar charts. Market Change is grey `#C8C8C8`. Nothing else is colored. *Exception:* the waterfall can only color by Increase, Decrease and Total, not by category, so there both drivers are grey, a decrease is orange `#E66C37`, and the Total bar carries the blue accent.
+- **One accent.** The report uses the class Wildcat theme (ICE 12). Net Flows (the part the firm can influence) is the accent blue `#118DFF` in the bar charts. Market Change is grey `#C8C8C8`. Nothing else is colored. *Exception:* the waterfall can only color by Increase, Decrease and Total, not by category, so there both drivers are grey, a decrease is orange `#E66C37`, and the Total bar is dark grey `#5A5F66`. (It was blue at first; the Part E critique pointed out that blue then meant two different things on Page 1, so I changed it. See `claude/design_critique.md`.)
 - **Accessible color.** Blue and grey differ in lightness, not only in hue, so the charts still read in grayscale and for color-blind viewers. Up and down are never shown with red and green alone, and every bar has a data label.
 - **Bars from zero.** This is Power BI's default for bar and waterfall charts, and I won't override it.
 - **Sorting.** Bars are sorted by total AUM change (descending), never alphabetically.
