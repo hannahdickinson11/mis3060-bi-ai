@@ -1,0 +1,44 @@
+measure,slice,value
+Ending AUM,year=2024,12729572078.859997
+Ending AUM LY,year=2024,10644971737.000006
+AUM YoY %,year=2024,0.19582957976434034
+Net Flows,year=2024,77513055.25999999
+Market Change,year=2024,2007087286.599991
+Organic Growth Rate,year=2024,0.0072816590945543385
+Ending AUM,tier=HNW|year=2024,2548521154.329999
+Ending AUM,tier=Retail|year=2024,533452497.88999945
+Ending AUM,tier=UHNW|year=2024,9647598426.639997
+Ending AUM LY,tier=HNW|year=2024,2130154150.4200006
+Ending AUM LY,tier=Retail|year=2024,447795648.6699991
+Ending AUM LY,tier=UHNW|year=2024,8067021937.910002
+Net Flows,tier=HNW|year=2024,25227406.260000005
+Net Flows,tier=Retail|year=2024,44184047.609999985
+Net Flows,tier=UHNW|year=2024,8101601.390000001
+Market Change,tier=HNW|year=2024,393139597.6499984
+Market Change,tier=Retail|year=2024,41472801.61000034
+Market Change,tier=UHNW|year=2024,1572474887.3399956
+Ending AUM,region=Northeast|year=2024,4530738631.379999
+Ending AUM,region=Mid-Atlantic|year=2024,3763923872.000001
+Ending AUM,region=West|year=2024,1014663659.9500002
+Ending AUM,region=Southeast|year=2024,3064446334.6899962
+Ending AUM,region=Midwest|year=2024,355799580.84000003
+Ending AUM LY,region=Northeast|year=2024,3795456741.8400044
+Ending AUM LY,region=Mid-Atlantic|year=2024,3142940677.4600005
+Ending AUM LY,region=West|year=2024,842832649.9499998
+Ending AUM LY,region=Southeast|year=2024,2568402938.220004
+Ending AUM LY,region=Midwest|year=2024,295338729.5299999
+Net Flows,region=Northeast|year=2024,32200393.440000013
+Net Flows,region=Mid-Atlantic|year=2024,22187226.96000001
+Net Flows,region=West|year=2024,4556108.98
+Net Flows,region=Southeast|year=2024,16770096.179999992
+Net Flows,region=Midwest|year=2024,1799229.6999999993
+Market Change,region=Northeast|year=2024,703081496.0999947
+Market Change,region=Mid-Atlantic|year=2024,598795967.5800004
+Market Change,region=West|year=2024,167274901.02000037
+Market Change,region=Southeast|year=2024,479273300.28999215
+Market Change,region=Midwest|year=2024,58661621.61000012
+Ending Clients,tier=HNW|year=2024,687
+Avg AUM per Client,tier=HNW|year=2024,3709637.7792285313
+Fee Yield (bps),tier=HNW|year=2024,61.38571957940255
+AUM-Weighted Alpha,tier=HNW|year=2024,0.013988042826855621
+Alpha Signal,tier=HNW|year=2024,In line

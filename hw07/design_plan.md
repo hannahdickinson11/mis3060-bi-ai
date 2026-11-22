@@ -86,7 +86,7 @@ The ID is included so two clients with the same name don't collapse into one row
 
 | ID | Data types | # measures | Analysis type | Why this visual (and what I rejected) |
 |---|---|---|---|---|
-| P1-1 – P1-4 | One number each | 1 (+1 comparison on P1-1) | KPI / status | A card is the fastest way to read a single value. Only Ending AUM carries a comparison (YoY %), so the one growth figure stands out. |
+| P1-1 – P1-4 | One number each | 1 (+1 comparison on P1-1) | KPI / status | A card is the fastest way to read a single value. Only Ending AUM carries a comparison (YoY %), so the one growth figure stands out. **Built as a one-row table instead:** Card, Card (new) and KPI visuals all rendered blank in Power BI Desktop on Apporto, so the five values (Ending AUM, AUM YoY % beside it, Net Flows, Market Change, Organic Growth Rate) sit in a single-row "KPI strip" table with large bold values and no gridlines. It keeps the cards' purpose (one glance, one row of headline numbers) with a visual that renders. |
 | P1-5 | Categorical (2 components + total) + quantitative | 1, switched by component | Composition of a change (bridge) | A waterfall is built to show how parts add up to a change, including negative parts (2022's market change was −$778M). It starts at zero and shows only the *change*, not the full balance. If it started at Ending AUM LY ($10.6B), the $78M flows bar would be about 0.7% of the axis and disappear. I rejected a pie: it can't show negatives, and the parts make up a change, not a whole. |
 | P1-6 | Categorical (3 tiers) + quantitative | 2 | Comparison across categories, plus composition | Horizontal bars start at zero and are easy to compare by length. I chose clustered over stacked because Market Change can be negative in other years, and stacked bars with mixed signs are hard to read. Sorted by total AUM change, descending. Data labels in $M keep Retail's small bars readable even though UHNW's $1.57B sets the axis. |
 | P1-7 | Categorical (5 regions) + quantitative | 2 | Comparison across categories | Same encoding as P1-6 so the reader only learns it once. Sorted the same way. |
@@ -95,8 +95,8 @@ The ID is included so two clients with the same name don't collapse into one row
 | P2-7 | Categorical (client) + several measures | 2 | Ranking / lookup | A table is right when the reader needs exact values for named clients. Data bars show the ranking; an icon flags any client whose AUM fell. |
 
 **Principles applied across both pages**
-- **One accent.** Net Flows (the part the firm can influence) is navy `#00205B` everywhere it appears. Market Change is neutral gray `#A0A4A8`, and totals are dark gray `#5A5F66`. Nothing else is colored.
-- **Accessible color.** Navy and gray differ in lightness, not only in hue, so the charts still read in grayscale and for color-blind viewers. Up and down are never shown with red and green alone, and every bar has a data label.
+- **One accent.** The report uses the class Wildcat theme (ICE 12). Net Flows (the part the firm can influence) is the accent blue `#118DFF` in the bar charts. Market Change is grey `#C8C8C8`. Nothing else is colored. *Exception:* the waterfall can only color by Increase, Decrease and Total, not by category, so there both drivers are grey, a decrease is orange `#E66C37`, and the Total bar carries the blue accent.
+- **Accessible color.** Blue and grey differ in lightness, not only in hue, so the charts still read in grayscale and for color-blind viewers. Up and down are never shown with red and green alone, and every bar has a data label.
 - **Bars from zero.** This is Power BI's default for bar and waterfall charts, and I won't override it.
 - **Sorting.** Bars are sorted by total AUM change (descending), never alphabetically.
 - **Insight titles.** Each title states the finding, for example "UHNW added the most AUM, almost all from markets", not the field names.
@@ -120,7 +120,7 @@ The ID is included so two clients with the same name don't collapse into one row
 | P1-6 tier bars | P1-7 region bars | **Filter** (default is Highlight) | Highlighting clustered bars leaves faded full-length bars behind, which is hard to read. Filtering redraws them cleanly. |
 | P1-7 region bars | P1-6 tier bars | **Filter** | Same reason. |
 | P1-6 / P1-7 | P1-5 waterfall, P1-1 – P1-4 cards | Filter (default) | Clicking a tier or region shows that segment's bridge and totals. |
-| P1-6 / P1-7 | P1-0 insight title | **None** | The headline always describes the whole firm, so a click never silently changes it. |
+| P1-6 / P1-7 | P1-0 insight title | Not settable (see note) | The headline always describes the whole firm, so a click never silently changes it. *As built:* the headline is a table, and its interaction icons couldn't be reached, so it shows `[Insight Title Firm]`, which removes tier and region filters inside the measure (Section 6). |
 
 All edited interactions will be listed again in the README filter audit (Part D, item 4).
 
@@ -253,4 +253,15 @@ Expected output for 2024: *"Market change drove 96% of 2024's $2.08B AUM growth"
 | Added the dollar change ($2.08B) | The share alone hides the scale. The MD needs both "how much" and "from where". |
 | Pulled measures into variables | Each measure is evaluated once, and the logic is easier to check against the reconciliation. |
 
-**Status:** the expected 2024 output above is calculated from the extract. Once the measure is in Power BI, confirm it shows the same sentence, and check that P1-6 and P1-7 are set to *None* for P1-0 (Section 4) so the title doesn't change when a bar is clicked.
+**Tested in Power BI:** the headline showed *"Market change drove 96% of 2024's $2.08B AUM growth"*, *"Market change drove 94% of 2023's $1.34B AUM growth"* and *"AUM fell $0.70B in 2022: market change -$0.78B, net flows +$76M"*, all matching the extract.
+
+**One more change after testing:** clicking the HNW bar changed the headline to *"Market change drove 94% of 2024's $0.42B AUM growth"*, which was HNW's numbers presented as the firm's. The headline visual had no reachable "None" interaction, so I wrapped the measure to ignore tier and region clicks while still following the Year and Risk Profile slicers:
+```DAX
+Insight Title Firm =
+CALCULATE (
+    [Insight Title],
+    REMOVEFILTERS ( dim_client[client_tier] ),
+    REMOVEFILTERS ( dim_advisor[region] )
+)
+```
+The headline visual and its alt text use `[Insight Title Firm]`.
