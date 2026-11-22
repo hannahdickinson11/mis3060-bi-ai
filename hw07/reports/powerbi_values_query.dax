@@ -1,0 +1,61 @@
+// DAX query run in Power BI Desktop (DAX query view) to export reports/powerbi_values.csv
+// Result 1: numeric measures; Result 2: Alpha Signal (text)
+EVALUATE
+VAR Y = 2024
+VAR Firm =
+    SELECTCOLUMNS (
+        {
+            ( "Ending AUM",          CALCULATE ( [Ending AUM], dim_date[year] = Y ) ),
+            ( "Ending AUM LY",       CALCULATE ( [Ending AUM LY], dim_date[year] = Y ) ),
+            ( "AUM YoY %",           CALCULATE ( [AUM YoY %], dim_date[year] = Y ) ),
+            ( "Net Flows",           CALCULATE ( [Net Flows], dim_date[year] = Y ) ),
+            ( "Market Change",       CALCULATE ( [Market Change], dim_date[year] = Y ) ),
+            ( "Organic Growth Rate", CALCULATE ( [Organic Growth Rate], dim_date[year] = Y ) )
+        },
+        "measure", [Value1], "slice", "year=2024", "value", [Value2]
+    )
+VAR Tiers =
+    SELECTCOLUMNS (
+        GENERATE (
+            VALUES ( dim_client[client_tier] ),
+            {
+                ( "Ending AUM",    CALCULATE ( [Ending AUM], dim_date[year] = Y ) ),
+                ( "Ending AUM LY", CALCULATE ( [Ending AUM LY], dim_date[year] = Y ) ),
+                ( "Net Flows",     CALCULATE ( [Net Flows], dim_date[year] = Y ) ),
+                ( "Market Change", CALCULATE ( [Market Change], dim_date[year] = Y ) )
+            }
+        ),
+        "measure", [Value1], "slice", "tier=" & dim_client[client_tier] & "|year=2024", "value", [Value2]
+    )
+VAR Regions =
+    SELECTCOLUMNS (
+        GENERATE (
+            VALUES ( dim_advisor[region] ),
+            {
+                ( "Ending AUM",    CALCULATE ( [Ending AUM], dim_date[year] = Y ) ),
+                ( "Ending AUM LY", CALCULATE ( [Ending AUM LY], dim_date[year] = Y ) ),
+                ( "Net Flows",     CALCULATE ( [Net Flows], dim_date[year] = Y ) ),
+                ( "Market Change", CALCULATE ( [Market Change], dim_date[year] = Y ) )
+            }
+        ),
+        "measure", [Value1], "slice", "region=" & dim_advisor[region] & "|year=2024", "value", [Value2]
+    )
+VAR Page2 =
+    SELECTCOLUMNS (
+        {
+            ( "Ending Clients",     CALCULATE ( [Ending Clients], dim_date[year] = Y, dim_client[client_tier] = "HNW" ) ),
+            ( "Avg AUM per Client", CALCULATE ( [Avg AUM per Client], dim_date[year] = Y, dim_client[client_tier] = "HNW" ) ),
+            ( "Fee Yield (bps)",    CALCULATE ( [Fee Yield (bps)], dim_date[year] = Y, dim_client[client_tier] = "HNW" ) ),
+            ( "AUM-Weighted Alpha", CALCULATE ( [AUM-Weighted Alpha], dim_date[year] = Y, dim_client[client_tier] = "HNW" ) )
+        },
+        "measure", [Value1], "slice", "tier=HNW|year=2024", "value", [Value2]
+    )
+RETURN
+    UNION ( Firm, Tiers, Regions, Page2 )
+
+EVALUATE
+ROW (
+    "measure", "Alpha Signal",
+    "slice", "tier=HNW|year=2024",
+    "value", CALCULATE ( [Alpha Signal], dim_date[year] = 2024, dim_client[client_tier] = "HNW" )
+)
